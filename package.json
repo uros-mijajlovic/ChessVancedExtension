@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "@types/chess.js": "^0.13.4",
+    "@types/chrome": "^0.0.243",
+    "@types/node": "^20.4.8",
+    "@types/react": "^18.2.18",
+    "chess.js": "^1.0.0-beta.6"
+  },
+  "devDependencies": {
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "browser": {
+    "path": false,
+    "stream": false
+  }
+}

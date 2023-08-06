@@ -1,3 +1,4 @@
+/// <reference types="chrome"/>
 
 chrome.tabs.onUpdated.addListener((tabId, tab) => {
   console.log("KURWAMA")
