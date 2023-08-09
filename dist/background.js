@@ -1,19 +1,26 @@
-
-
-console.log("i dunno");
 var stockfish;
-chrome.runtime.sendMessage("i dunno says hi from bg");
-Stockfish().then((sf) => {
-    stockfish = sf;
-    console.log("i dunno");
-    chrome.runtime.sendMessage("UCI");
+async function startStockfish(){
+    await Stockfish().then((sf) => {
+        stockfish = sf;
+        console.log("i dunno");
     
-    stockfish.addMessageListener((message) => {
-        chrome.runtime.sendMessage(message);
+        stockfish.addMessageListener((message) => {
+            chrome.runtime.sendMessage({ "type": "stockfish", "message": message });
+        });
     });
 
-    sf.postMessage("uci")
-    sf.postMessage("go movetime 1000");
-    
-});
+    chrome.runtime.onMessage.addListener((msg) => {
+        console.log(msg);
+        
+        if (msg.type == "stockfishOrchestrator") {
+            if(msg.message=="isready"){
+                chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
+            }else{
+                stockfish.postMessage(msg.message);
+            }
+        }
+    })
+}
+startStockfish();
+
 
