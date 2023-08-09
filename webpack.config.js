@@ -7,16 +7,16 @@ module.exports = {
         new webpack.IgnorePlugin({resourceRegExp:/fs/}),
         new webpack.IgnorePlugin({resourceRegExp:/worker_threads/}),
     ],
-    entry: './src/contentScriptFiles/contentScript.ts', // Change this to the entry point of your extension
+    entry: './src/contentScript.ts', // Change this to the entry point of your extension
     output: {
         filename: 'contentScript.js', // Change this to the desired output filename
         path: path.resolve(__dirname, 'dist'), // Change this to the desired output directory
     },
     resolve: {
         extensions: ['.ts', '.js'],
+        fallback: { "path": require.resolve("path-browserify") },
     },
     module: {
-
         rules: [
             {
                 test: /\.ts$/,

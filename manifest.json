@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "SFTESTRAC",
+  "version": "1.0.0",
+  "description": "Free Game Review for Chess.com and Lichess",
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "contentScript.js"
+      ]
+    }
+  ],
+  "background": {
+    "type": "module",
+    "service_worker": "worker_wrapper.js"
+  },
+  "action": {
+    "default_title": "My YT Bookmarks",
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {"extension_pages":"script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"},
+  "permissions": [
+    "storage",
+    "debugger",
+    "tabs",
+    "offscreen"
+  ]
+}

@@ -1,14 +1,18 @@
-/// <reference types="chrome"/>
+declare var Stockfish: any;
+let stockfish;
+const globalVariable = { currentTabId: null }; // Bad... but... whatever :)
 
-chrome.tabs.onUpdated.addListener((tabId, tab) => {
-  console.log("KURWAMA")
-    if (tab.url && tab.url.includes("chess.com")) {
-      console.log(tab.url);
-      console.log("KURAC ")
-      chrome.tabs.sendMessage(tabId, {
-        type: "NEW",
-        videoId: "kurcina",
-      });
-    }
+const sendMessageToContentJs = (tabId, message) => {
+  chrome.tabs.sendMessage(tabId, message);
+};
+
+Stockfish().then((sf) => {
+  stockfish = sf;
+  sf.addMessageListener((message) => {
+    console.log(message);
+    sendMessageToContentJs(globalVariable.currentTabId, {
+      type: 'stockfish',
+      message: message,
+    });
   });
-  
+});

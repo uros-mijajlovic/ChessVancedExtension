@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "module":"es2022",
-    "target": "es2017",
+    "target":"es6",
+    "module":"ES2020",
     "allowJs":true, 
-    "outDir":"dist" 
+    "outDir":"dist",
+    "moduleResolution": "node"
   },
   "include": [
     "src/**/*"
