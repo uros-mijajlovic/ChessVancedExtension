@@ -1,6 +1,7 @@
-import { Chess } from '../dependencies/chess.js';
+//import * as Chess from './dependencies/chess.js';
 import { createStockfishOrchestrator } from './stockfishOrchestator.js';
 import * as sacrifice from './sacrifice.js';
+import { Chess } from './dependencies/chess.js';
 
 class AnalysisOrchestrator {
     constructor(stockfishOrchestratorInst) {
@@ -12,6 +13,18 @@ class AnalysisOrchestrator {
         this.currentGameId=null;
         this.stockfishOrchestrator.analysisOrchestrator = this;
         this.stockfishOrchestrator.setCallback((data) => { this.sendEval(data); });
+
+        chrome.runtime.onMessage.addListener((msg) => {
+            console.log(msg);
+            if (msg.type == "stockfishOrchestrator") {
+                if(msg.message=="isready"){
+                    chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
+                }else{
+                    this.stockfishOrchestrator.stockfishWorker.postMessage(msg.message);
+                }
+            }
+        })
+
     }
     clearData() {
         this.gameAnalysis = [];

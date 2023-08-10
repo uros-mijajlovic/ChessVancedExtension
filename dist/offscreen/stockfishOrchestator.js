@@ -11,17 +11,6 @@ export async function createStockfishOrchestrator(sendEvalAfterEveryMove) {
         chrome.runtime.sendMessage({ "type": "stockfish", "message": message });
     });
 
-    chrome.runtime.onMessage.addListener((msg) => {
-        console.log(msg);
-        
-        if (msg.type == "stockfishOrchestrator") {
-            if(msg.message=="isready"){
-                chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
-            }else{
-                stockfish.postMessage(msg.message);
-            }
-        }
-    })
     return stockfishOrchestratorInst;
 }
 class stockfishOrchestrator {

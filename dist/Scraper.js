@@ -1,4 +1,4 @@
-import { Chess } from "chess.js";
+import { Chess } from "./dependencies/chess.js";
 
 export class Scraper {
     moveStringArrayToFenArray(moveStringArray) {
