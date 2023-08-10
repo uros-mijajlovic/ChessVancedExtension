@@ -2,14 +2,15 @@
 let creating; // A global promise to avoid concurrency issues
 var stockfishReady=false;
 
-
+var OFFSCREEN_DIRECTORY_PATH="./offscreen/"
+var OFFSCREEN_DOCUMENT_NAME="offscreen.html"
 async function hasDocument() {
 
   const matchedClients = await clients.matchAll({ includeUncontrolled: true, type: 'window' });
 
   for (const client of matchedClients) {
     console.log(client.url);
-    if (client.url.endsWith("background.html")) {
+    if (client.url.endsWith(OFFSCREEN_DOCUMENT_NAME)) {
       console.log("VEC GA IMAMO KURVE")
       return true;
     }
@@ -49,7 +50,7 @@ async function setupOffscreenDocument(path) {
 }
 
 async function setupIfNeededAndSendMessage(msg) {
-  await setupOffscreenDocument("./background.html")
+  await setupOffscreenDocument(OFFSCREEN_DIRECTORY_PATH+OFFSCREEN_DOCUMENT_NAME)
   await waitUntilStockfishReady();
   console.log("spreman")
   chrome.runtime.sendMessage({ "type": "stockfishOrchestrator", "message": msg.message });

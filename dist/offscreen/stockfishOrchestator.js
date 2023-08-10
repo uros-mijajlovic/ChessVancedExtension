@@ -123,27 +123,27 @@ class stockfishOrchestrator {
         this.getAnalsysForFenPosition(fenPosition, "", 0);
     }
     handleMainMessage(message) {
-        const from = message.from;
         const text = message.message;
+        console.log(text);
         //console.log(text);
-        if (text.startsWith('bestmove')) {
-            this.whiteMove = !this.whiteMove;
-            const currentEval = this.stockfishParser.getAllData();
-            //console.log(currentEval);
-            var dataFromStockfish = this.fillRestOfDataForAnalysisOrchestrator(currentEval);
-            this.stockfishParser.clearData();
-            if (!this.sendEvalAfterEveryMove) {
-                this.callbackFunction(dataFromStockfish);
-            }
-            this.isCurrentlyWorking = false;
-        }
-        else {
-            this.stockfishParser.sendMessage(text, this.currentFEN);
-            const currentEval = this.stockfishParser.getAllData();
-            if (this.sendEvalAfterEveryMove) {
-                this.callbackFunction(this.fillRestOfDataForAnalysisOrchestrator(currentEval));
-            }
-        }
+        // if (text.startsWith('bestmove')) {
+        //     this.whiteMove = !this.whiteMove;
+        //     const currentEval = this.stockfishParser.getAllData();
+        //     //console.log(currentEval);
+        //     var dataFromStockfish = this.fillRestOfDataForAnalysisOrchestrator(currentEval);
+        //     this.stockfishParser.clearData();
+        //     if (!this.sendEvalAfterEveryMove) {
+        //         this.callbackFunction(dataFromStockfish);
+        //     }
+        //     this.isCurrentlyWorking = false;
+        // }
+        // else {
+        //     this.stockfishParser.sendMessage(text, this.currentFEN);
+        //     const currentEval = this.stockfishParser.getAllData();
+        //     if (this.sendEvalAfterEveryMove) {
+        //         this.callbackFunction(this.fillRestOfDataForAnalysisOrchestrator(currentEval));
+        //     }
+        // }
     }
 }
 export { stockfishOrchestrator };

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "SFTESTRAC",
+  "name": "ChessVanced",
   "version": "1.0.0",
   "description": "Free Game Review for Chess.com and Lichess",
   "host_permissions": [
@@ -18,7 +18,7 @@
   ],
   "background": {
     "type": "module",
-    "service_worker": "worker_wrapper.js"
+    "service_worker": "backgroundScript.js"
   },
   "action": {
     "default_title": "My YT Bookmarks",
