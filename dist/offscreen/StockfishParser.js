@@ -1,3 +1,4 @@
+
 function getDepthFromString(message) {
     const depthPattern = /depth (\d+)/;
     const depthMatch = message.match(depthPattern);

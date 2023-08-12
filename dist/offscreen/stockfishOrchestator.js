@@ -113,7 +113,7 @@ class stockfishOrchestrator {
     }
     handleMainMessage(message) {
         const text = message.message;
-        console.log(text);
+        //console.log(text);
         //console.log(text);
         // if (text.startsWith('bestmove')) {
         //     this.whiteMove = !this.whiteMove;

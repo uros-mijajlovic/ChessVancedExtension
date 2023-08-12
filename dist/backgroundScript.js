@@ -1,9 +1,18 @@
+import { MemoryHandler } from "./MemoryHandler.js";
 
 let creating; // A global promise to avoid concurrency issues
 var stockfishReady=false;
 
 var OFFSCREEN_DIRECTORY_PATH="./offscreen/"
 var OFFSCREEN_DOCUMENT_NAME="offscreen.html"
+var memoryHandler;
+function setup(){
+  memoryHandler=new MemoryHandler();
+}
+
+
+
+
 async function hasDocument() {
 
   const matchedClients = await clients.matchAll({ includeUncontrolled: true, type: 'window' });
@@ -21,7 +30,7 @@ async function hasDocument() {
 
 async function waitUntilStockfishReady(){
   while(stockfishReady==false){
-    chrome.runtime.sendMessage({"type":"stockfishOrchestrator", "message":"isready"});
+    chrome.runtime.sendMessage({"type":"move array", "message":"isready"});
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
@@ -53,8 +62,9 @@ async function setupIfNeededAndSendMessage(msg) {
   await setupOffscreenDocument(OFFSCREEN_DIRECTORY_PATH+OFFSCREEN_DOCUMENT_NAME)
   await waitUntilStockfishReady();
   console.log("spreman")
-  chrome.runtime.sendMessage({ "type": "stockfishOrchestrator", "message": msg.message });
+  chrome.runtime.sendMessage(msg);
 }
+
 
 chrome.runtime.onMessage.addListener((msg) => {
 
@@ -70,5 +80,8 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 })
 
-setupIfNeededAndSendMessage({ "type": "stockfishOrchestrator", "message": "go movetime 50" });
+setup();
+
+
+setupIfNeededAndSendMessage({ "type": "move array", "message": {"gameId":"1224", "moves":["e4", "e5"] }});
 

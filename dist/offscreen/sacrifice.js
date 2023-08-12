@@ -1,4 +1,18 @@
 import { Chess } from './dependencies/chess.js';
+
+export function moveStringArrayToFenArray(moveStringArray) {
+
+    const chess = new Chess();
+    const fenArray = [];
+    fenArray.push(chess.fen());
+    for (const move of moveStringArray) {
+        chess.move(move);
+        fenArray.push(chess.fen());
+    }
+    return fenArray;
+}
+
+
 export function PgnToFenArr(pgnString) {
     const chessjs = Chess();
     chessjs.load_pgn(pgnString);

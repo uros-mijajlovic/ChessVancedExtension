@@ -1,19 +1,10 @@
 import { Chess } from "./dependencies/chess.js";
+import { moveStringArrayToFenArray } from "./offscreen/sacrifice.js";
+
+
 
 export class Scraper {
-    moveStringArrayToFenArray(moveStringArray) {
 
-        const chess = new Chess();
-        const fenArray = [];
-
-        for (const move of moveStringArray) {
-            chess.move(move);
-            fenArray.push(chess.fen());
-        }
-
-        return fenArray;
-
-    }
     extractStringFromNode(node){
         var prefix = ""
         if (node.children.length == 1) {
@@ -21,9 +12,10 @@ export class Scraper {
         }
         var moveString = prefix + node.textContent;
         return moveString
-
+    
     }
-    movesToSEN(HTMLMoves) {
+    
+    HTMLmovesToSEN(HTMLMoves) {
         var moveArray= [];
 
         const whiteMoves = HTMLMoves.getElementsByClassName("white node");
@@ -36,7 +28,7 @@ export class Scraper {
                 moveArray.push(this.extractStringFromNode(blackMoves[i]));
             }
         }
-        const fenArray=this.moveStringArrayToFenArray(moveArray);
+        const fenArray=moveStringArrayToFenArray(moveArray);
         console.log(fenArray);
 
     }
@@ -47,7 +39,7 @@ export class Scraper {
                 var moveContainer = document.querySelectorAll("vertical-move-list")[0]
                 console.log("TST")
                 if (moveContainer) {
-                    this.movesToSEN(moveContainer);
+                    this.HTMLmovesToSEN(moveContainer);
                 }
             } catch (error) {
                 console.log("some error", error)

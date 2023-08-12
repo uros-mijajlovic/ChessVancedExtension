@@ -2,9 +2,11 @@
 import { createStockfishOrchestrator } from './stockfishOrchestator.js';
 import * as sacrifice from './sacrifice.js';
 import { Chess } from './dependencies/chess.js';
+import { moveStringArrayToFenArray } from './sacrifice.js';
 
 class AnalysisOrchestrator {
     constructor(stockfishOrchestratorInst) {
+        
         this.stockfishOrchestrator = stockfishOrchestratorInst;
         this.gameAnalysis = [];
         this.analysisArray = [];
@@ -15,12 +17,15 @@ class AnalysisOrchestrator {
         this.stockfishOrchestrator.setCallback((data) => { this.sendEval(data); });
 
         chrome.runtime.onMessage.addListener((msg) => {
-            console.log(msg);
-            if (msg.type == "stockfishOrchestrator") {
+            console.log(msg)
+            if (msg.type == "move array") {
                 if(msg.message=="isready"){
                     chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
                 }else{
-                    this.stockfishOrchestrator.stockfishWorker.postMessage(msg.message);
+                    console.log("PRINTRAC");
+                    chrome.runtime.sendMessage({ "type": "stockfish", "message": msg })
+                    this.analyzeMoveArray(msg.message.moves, msg.message.gameId)
+                    
                 }
             }
         })
@@ -29,6 +34,29 @@ class AnalysisOrchestrator {
     clearData() {
         this.gameAnalysis = [];
         this.analysisArray = [];
+    }
+    async clearDataIfNewGame(newGameId){
+        chrome.runtime.sendMessage({ "type": "stockfish", "message": "there" })
+        var oldGameId;
+        oldGameId = (await chrome.storage.local.get(["currentGameId"])).currentGameId;
+        chrome.runtime.sendMessage({ "type": "stockfish", "message": "there" })
+        chrome.runtime.sendMessage({ "type": "stockfish", "message": oldGameId })
+        if(oldGameId!=newGameId){
+            await chrome.storage.local.set({ "currentGameId": newGameId });
+            await chrome.storage.local.set({ "gameAnalysis": {}});
+            await chrome.storage.local.set({ "analyzedFens": []});
+        }
+
+    }
+    async analyzeMoveArray(moveArray, gameId){
+        await this.clearDataIfNewGame(gameId);
+
+        console.log("RAC")
+        console.log(moveArray, gameId);
+        var fenArray=moveStringArrayToFenArray(moveArray);
+
+        chrome.runtime.sendMessage({ "type": "stockfish", "message": [fenArray, gameId] })
+
     }
     calculateMoveBrilliance(playersMove, moveIndex) {
         if (moveIndex == 0) {
@@ -133,9 +161,6 @@ class AnalysisOrchestrator {
           this.stockfishOrchestrator.setCallback((data) => { this.sendEval(data) });
     }
     async analyzeGame(fenMoves, moveArray) {
-
-        
-    
         console.log("Propusten dalje")
     
         this.running=true;
@@ -154,7 +179,7 @@ class AnalysisOrchestrator {
           if (i == 0) {
             await this.stockfishOrchestrator.waitForRun(fenMove, "", i);
           } else {
-            await this.stockfishOrchestrator.waitForRun(fenMove, moveArray[i - 1].fromto, i);
+            await this.stockfishOrchestrator.waitForRun(fenMove, moveArray[i - 1], i);
           }
           //console.log(fenMove);
         }
