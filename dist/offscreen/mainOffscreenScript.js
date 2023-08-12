@@ -21,7 +21,5 @@ async function localStorageTest(){
 }
 
 setup();
-localStorageTest();
-
 var stockfishOrchestratorInst=await createStockfishOrchestrator(false);
 new AnalysisOrchestrator(stockfishOrchestratorInst);

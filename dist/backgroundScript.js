@@ -81,7 +81,5 @@ chrome.runtime.onMessage.addListener((msg) => {
 })
 
 setup();
-
-
 setupIfNeededAndSendMessage({ "type": "move array", "message": {"gameId":"1224", "moves":["e4", "e5"] }});
 
