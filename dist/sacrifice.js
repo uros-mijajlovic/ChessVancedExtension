@@ -1,4 +1,4 @@
-import { Chess } from './dependencies/chess.js';
+import { Chess } from './offscreen/dependencies/chess.js';
 
 export function moveStringArrayToFenArray(moveStringArray) {
 

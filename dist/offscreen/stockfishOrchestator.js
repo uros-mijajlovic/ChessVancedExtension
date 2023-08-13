@@ -5,11 +5,26 @@ export async function createStockfishOrchestrator(sendEvalAfterEveryMove) {
     await Stockfish().then(sf => {
         stockfish = sf;
     });
+
     const stockfishOrchestratorInst = new stockfishOrchestrator(stockfish, sendEvalAfterEveryMove);
     stockfish.addMessageListener(message => {
         stockfishOrchestratorInst.handleMainMessage({ from: 'stockfish', message: message });
         chrome.runtime.sendMessage({ "type": "stockfish", "message": message });
     });
+
+    chrome.runtime.onMessage.addListener((msg) => {
+        console.log(msg)
+        if (msg.type == "move array") {
+            if (msg.message == "isready") {
+                chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
+            } else {
+                console.log("PRINTRAC");
+                chrome.runtime.sendMessage({ "type": "stockfishBack", "message": msg })
+                stockfishOrchestratorInst.waitForRun(msg.message.fen)
+            }
+        }
+    })
+
 
     return stockfishOrchestratorInst;
 }
@@ -32,8 +47,9 @@ class stockfishOrchestrator {
         this.stockfishWorker.postMessage(`setoption name Threads value 4`);
         this.stockfishWorker.postMessage(`setoption name MultiPV value 2`);
         self.onmessage = this.handleMainMessage.bind(this);
-        //setoption name Use NNUE value true
-        //this.stockfishWorker.postMessage(`bench`);
+
+
+
     }
     async getLichessData(fenPosition) {
         try {
@@ -83,16 +99,18 @@ class stockfishOrchestrator {
         dataFromStockfish["moveIndex"] = this.moveIndex;
         return dataFromStockfish;
     }
-    async getAnalsysForFenPosition(fenPosition, regularMove, moveIndex) {
+    async getAnalsysForFenPosition(fenPosition) {
         this.currentFEN = fenPosition;
-        this.currentRegularMove = regularMove;
-        this.moveIndex = moveIndex;
+        chrome.runtime.sendMessage({ "type": "stockfishBack", "result": fenPosition })
         const cachedResponse = await this.checkCache(fenPosition);
         if (cachedResponse[0] == true) {
             console.log("za ovu poziciju imam info");
             console.log(cachedResponse[1]);
+            chrome.runtime.sendMessage({ "type": "stockfishBack", "result": cachedResponse })
+
             this.callbackFunction(this.fillRestOfDataForAnalysisOrchestrator(cachedResponse[1]));
             this.isCurrentlyWorking = false;
+
             return;
         }
         console.log("za ovu poziciju nemam info");
@@ -100,12 +118,12 @@ class stockfishOrchestrator {
         this.stockfishWorker.postMessage(`position fen ${fenPosition}`);
         this.stockfishWorker.postMessage(`go movetime ${this.moveTimeLengthMs}`);
     }
-    async waitForRun(fenPosition, regularMove, moveIndex) {
+    async waitForRun(fenPosition) {
         while (this.isCurrentlyWorking) {
             await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for 100ms
         }
         this.isCurrentlyWorking = true;
-        await this.getAnalsysForFenPosition(fenPosition, regularMove, moveIndex);
+        await this.getAnalsysForFenPosition(fenPosition);
     }
     async stopAndStartNewAnalysis(fenPosition) {
         this.stockfishWorker.postMessage(`stop`);
@@ -113,26 +131,25 @@ class stockfishOrchestrator {
     }
     handleMainMessage(message) {
         const text = message.message;
-        //console.log(text);
-        //console.log(text);
-        // if (text.startsWith('bestmove')) {
-        //     this.whiteMove = !this.whiteMove;
-        //     const currentEval = this.stockfishParser.getAllData();
-        //     //console.log(currentEval);
-        //     var dataFromStockfish = this.fillRestOfDataForAnalysisOrchestrator(currentEval);
-        //     this.stockfishParser.clearData();
-        //     if (!this.sendEvalAfterEveryMove) {
-        //         this.callbackFunction(dataFromStockfish);
-        //     }
-        //     this.isCurrentlyWorking = false;
-        // }
-        // else {
-        //     this.stockfishParser.sendMessage(text, this.currentFEN);
-        //     const currentEval = this.stockfishParser.getAllData();
-        //     if (this.sendEvalAfterEveryMove) {
-        //         this.callbackFunction(this.fillRestOfDataForAnalysisOrchestrator(currentEval));
-        //     }
-        // }
+        console.log(text);
+        console.log(text);
+        if (text.startsWith('bestmove')) {
+            this.whiteMove = !this.whiteMove;
+            const currentEval = this.stockfishParser.getAllData();
+
+            var dataFromStockfish = this.fillRestOfDataForAnalysisOrchestrator(currentEval);
+            this.stockfishParser.clearData();
+            if (!this.sendEvalAfterEveryMove) {
+
+                chrome.runtime.sendMessage({ type: "stockfish", message: "gotov" })
+                this.callbackFunction(dataFromStockfish);
+            }
+            this.isCurrentlyWorking = false;
+        }
+        else {
+            this.stockfishParser.sendMessage(text, this.currentFEN);
+            const currentEval = this.stockfishParser.getAllData();
+        }
     }
 }
 export { stockfishOrchestrator };

@@ -1,35 +1,13 @@
 //import * as Chess from './dependencies/chess.js';
-import { createStockfishOrchestrator } from './stockfishOrchestator.js';
 import * as sacrifice from './sacrifice.js';
-import { Chess } from './dependencies/chess.js';
-import { moveStringArrayToFenArray } from './sacrifice.js';
 
-class AnalysisOrchestrator {
-    constructor(stockfishOrchestratorInst) {
-        
-        this.stockfishOrchestrator = stockfishOrchestratorInst;
+export class AnalysisOrchestrator {
+    constructor(memoryHandler) {
         this.gameAnalysis = [];
         this.analysisArray = [];
         this.stopped = false;
         this.running = false;
         this.currentGameId=null;
-        this.stockfishOrchestrator.analysisOrchestrator = this;
-        this.stockfishOrchestrator.setCallback((data) => { this.sendEval(data); });
-
-        chrome.runtime.onMessage.addListener((msg) => {
-            console.log(msg)
-            if (msg.type == "move array") {
-                if(msg.message=="isready"){
-                    chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
-                }else{
-                    console.log("PRINTRAC");
-                    chrome.runtime.sendMessage({ "type": "stockfish", "message": msg })
-                    this.analyzeMoveArray(msg.message.moves, msg.message.gameId)
-                    
-                }
-            }
-        })
-
     }
     clearData() {
         this.gameAnalysis = [];
@@ -38,14 +16,14 @@ class AnalysisOrchestrator {
     async clearDataIfNewGame(newGameId){
         chrome.runtime.sendMessage({ "type": "stockfish", "message": "there" })
         var oldGameId;
-        // oldGameId = (await chrome.storage.local.get(["currentGameId"])).currentGameId;
-        // chrome.runtime.sendMessage({ "type": "stockfish", "message": "there" })
-        // chrome.runtime.sendMessage({ "type": "stockfish", "message": oldGameId })
-        // if(oldGameId!=newGameId){
-        //     await chrome.storage.local.set({ "currentGameId": newGameId });
-        //     await chrome.storage.local.set({ "gameAnalysis": {}});
-        //     await chrome.storage.local.set({ "analyzedFens": []});
-        // }
+        oldGameId = (await chrome.storage.local.get(["currentGameId"])).currentGameId;
+        chrome.runtime.sendMessage({ "type": "stockfish", "message": "there" })
+        chrome.runtime.sendMessage({ "type": "stockfish", "message": oldGameId })
+        if(oldGameId!=newGameId){
+            await chrome.storage.local.set({ "currentGameId": newGameId });
+            await chrome.storage.local.set({ "gameAnalysis": {}});
+            await chrome.storage.local.set({ "analyzedFens": []});
+        }
 
     }
     async analyzeMoveArray(moveArray, gameId){
@@ -189,4 +167,3 @@ class AnalysisOrchestrator {
       }
       
 }
-export { AnalysisOrchestrator };

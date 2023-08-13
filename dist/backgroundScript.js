@@ -1,18 +1,18 @@
-import { MemoryHandler } from "./MemoryHandler.js";
+//import { MemoryHandler } from "./MemoryHandler.js";
+import { AnalysisOrchestrator } from "./AnalysisOrchestrator.js";
+import {MemoryHandler} from "./MemoryHandler.js"
 
 let creating; // A global promise to avoid concurrency issues
 var stockfishReady=false;
 
 var OFFSCREEN_DIRECTORY_PATH="./offscreen/"
 var OFFSCREEN_DOCUMENT_NAME="offscreen.html"
+
+
 var memoryHandler;
 function setup(){
   memoryHandler=new MemoryHandler();
 }
-
-
-
-
 async function hasDocument() {
 
   const matchedClients = await clients.matchAll({ includeUncontrolled: true, type: 'window' });
@@ -75,11 +75,11 @@ chrome.runtime.onMessage.addListener((msg) => {
       stockfishReady=true;
     }
   }
-  if (msg.type == "SO") {
-    setupIfNeededAndSendMessage(msg);
-  }
 })
 
 setup();
-setupIfNeededAndSendMessage({ "type": "move array", "message": {"gameId":"1224", "moves":["e4", "e5"] }});
+console.log("KURC");
+var analysisOrchestrator=new AnalysisOrchestrator(memoryHandler);
+const russianGameFen="rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1";
+setupIfNeededAndSendMessage({ "type": "move array", "message": {fen: russianGameFen}});
 
