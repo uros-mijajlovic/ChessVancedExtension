@@ -1,45 +1,80 @@
 //import * as Chess from './dependencies/chess.js';
 import * as sacrifice from './sacrifice.js';
-
+import { setupIfNeededAndSendMessage } from './backgroundScript.js';
 export class AnalysisOrchestrator {
     constructor(memoryHandler) {
         this.gameAnalysis = [];
         this.analysisArray = [];
         this.stopped = false;
         this.running = false;
+        this.waitingForStockfish=false;
         this.currentGameId=null;
+        this.memoryHandler=memoryHandler;
+
+        this.analyzedMoves=[]; // cuva poteze za koje je vec pozvan analyzeGame
+
+        chrome.runtime.onMessage.addListener((msg) => {
+            console.log(msg)
+            if (msg.type == "stockfishToAnalysis") {
+                this.sendEval(msg.message);
+            }
+        })
+
     }
     clearData() {
         this.gameAnalysis = [];
         this.analysisArray = [];
     }
     async clearDataIfNewGame(newGameId){
-        chrome.runtime.sendMessage({ "type": "stockfish", "message": "there" })
+        
         var oldGameId;
         oldGameId = (await chrome.storage.local.get(["currentGameId"])).currentGameId;
-        chrome.runtime.sendMessage({ "type": "stockfish", "message": "there" })
-        chrome.runtime.sendMessage({ "type": "stockfish", "message": oldGameId })
+        
+
         if(oldGameId!=newGameId){
+            try{
+                await chrome.offscreen.closeDocument();
+            }catch(e){
+                console.log(e);
+            }
+            this.analyzedMoves=[];
+            console.log("IDEVI NISU ISTI");
             await chrome.storage.local.set({ "currentGameId": newGameId });
             await chrome.storage.local.set({ "gameAnalysis": {}});
             await chrome.storage.local.set({ "analyzedFens": []});
         }
-
+    }
+    returnNewMoves(newMoveArray){
+        const oldMoveArray=this.analyzedMoves;
+        
+        const newMoves=Array.from(newMoveArray.slice(oldMoveArray.length));
+        
+        console.log(oldMoveArray.length,"oldvsnew", oldMoveArray.toString(),"|", newMoveArray.toString(), "|", newMoves.toString());
+        for (const newMove of newMoves){
+            this.analyzedMoves.push(newMove);
+        }
+        return newMoves;
     }
     async analyzeMoveArray(moveArray, gameId){
         await this.clearDataIfNewGame(gameId);
+        moveArray.unshift("")
+        const movesToAnalyze = this.returnNewMoves(moveArray);
 
-        console.log("RAC")
-        console.log(moveArray, gameId);
-        var fenArray=moveStringArrayToFenArray(moveArray);
+        var fenArray=sacrifice.moveStringArrayToFenArray(movesToAnalyze);
+        var fromtoMoves = sacrifice.moveStringArrayToMoveArray(movesToAnalyze);
+        console.log("MOVEARRAY", movesToAnalyze, fromtoMoves);
 
-        chrome.runtime.sendMessage({ "type": "stockfish", "message": [fenArray, gameId] })
+        for(let i=0; i<fenArray.length; i++){
+            setupIfNeededAndSendMessage({ "type": "move array", "message": {fen: fenArray[i], move:fromtoMoves[i], index:i}});
+        }
+
 
     }
     calculateMoveBrilliance(playersMove, moveIndex) {
-        if (moveIndex == 0) {
+        if (moveIndex < 2) {
             return "gray";
         }
+        console.log(playersMove, moveIndex);
         const isWhiteMove = moveIndex % 2;
         const beforeMoveAnalysis = this.analysisArray[this.analysisArray.length - 2];
         const afterMoveAnalysis = this.analysisArray[this.analysisArray.length - 1];
@@ -77,7 +112,11 @@ export class AnalysisOrchestrator {
         // if(afterMoveCpDiscrepancy)
         return "gray";
     }
+    //postoji sansa da ovde dodje do nekog utrkivanja, najlaksi nacin da se resi je da svaki potez iz analysis-a ima index
     sendEval(dataFromStockfish) {
+        console.log("DATA?!?", dataFromStockfish);
+        //chrome.runtime.sendMessage({type:"justLettingEveryoneKnow", message:dataFromStockfish});
+        
         if (this.stopped) {
             return;
         }
@@ -103,6 +142,10 @@ export class AnalysisOrchestrator {
         }
         moveAnalysis["moveRating"] = this.calculateMoveBrilliance(regularMove, moveIndex);
         this.gameAnalysis.push(moveAnalysis);
+
+        chrome.storage.local.set({ "currentGameAnalysis": this.gameAnalysis });
+
+        console.log(this.gameAnalysis);
     }
     async stopAnalysis() {
         if (this.running == false) {

@@ -58,7 +58,7 @@ async function setupOffscreenDocument(path) {
   }
 }
 
-async function setupIfNeededAndSendMessage(msg) {
+export async function setupIfNeededAndSendMessage(msg) {
   await setupOffscreenDocument(OFFSCREEN_DIRECTORY_PATH+OFFSCREEN_DOCUMENT_NAME)
   await waitUntilStockfishReady();
   console.log("spreman")
@@ -67,9 +67,6 @@ async function setupIfNeededAndSendMessage(msg) {
 
 
 chrome.runtime.onMessage.addListener((msg) => {
-
-  console.log(msg);
-
   if(msg.type=="stockfish"){
     if((msg.message)=="readyok"){
       stockfishReady=true;
@@ -81,5 +78,9 @@ setup();
 console.log("KURC");
 var analysisOrchestrator=new AnalysisOrchestrator(memoryHandler);
 const russianGameFen="rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1";
-setupIfNeededAndSendMessage({ "type": "move array", "message": {fen: russianGameFen}});
+const moveArray="e4 e5".split(" ");
+const gameId="0206005"
+//analysisOrchestrator.analyzeMoveArray(Array.from(moveArray), gameId);
+analysisOrchestrator.analyzeMoveArray(Array.from(moveArray), gameId);
+//setupIfNeededAndSendMessage({ "type": "move array", "message": {fen: russianGameFen}});
 

@@ -1,15 +1,31 @@
 import { Chess } from './offscreen/dependencies/chess.js';
 
 export function moveStringArrayToFenArray(moveStringArray) {
-
     const chess = new Chess();
     const fenArray = [];
-    fenArray.push(chess.fen());
     for (const move of moveStringArray) {
         chess.move(move);
         fenArray.push(chess.fen());
     }
     return fenArray;
+}
+
+export function moveStringArrayToMoveArray(moveStringArray) {
+    const chess = new Chess();
+    const fenArray = [];
+    for (const move of moveStringArray) {
+        chess.move(move);
+        fenArray.push(chess.fen());
+    }
+    const moves = chess.history({ verbose: true });
+    const result=[]
+    if(moveStringArray[0]==""){
+        result.push("");
+    }
+    moves.forEach((move, index) => {
+        result.push(move.from + move.to)
+    });
+    return result;
 }
 
 
