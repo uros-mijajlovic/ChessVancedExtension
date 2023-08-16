@@ -43,8 +43,12 @@ export class AnalysisOrchestrator {
             this.analyzedMoves=[];
             console.log("IDEVI NISU ISTI");
             await chrome.storage.local.set({ "currentGameId": newGameId });
-            await chrome.storage.local.set({ "gameAnalysis": {}});
+            await chrome.storage.local.set({ "currentGameAnalysis": {}});
             await chrome.storage.local.set({ "analyzedFens": []});
+            await chrome.storage.local.set({ "fenArray": []});
+            await chrome.storage.local.set({ "moveArray": []});
+
+            
         }
     }
     returnNewMoves(newMoveArray){

@@ -106,10 +106,33 @@ class Scraper {
         }
     }
 }
-//import { Scraper } from "./Scraper.js";
-if(window.location.href == "http://localhost:8000/"){
-    console.log("DA LI JE MOOOGUUUCEEE");
+
+class AnalysisInjector{
+    constructor(){
+        this.injected=false;
+        chrome.runtime.onMessage.addListener((msg) => {
+            if (msg.type == "chessvanced.com") {
+                if(msg.message=="injected"){
+                    this.injected=true;
+                }
+            }
+        })
+
+    }
+    async tryToInjectInfo(){
+        if(window.location.href == "http://localhost:8000/"){
+            const key="analysisData"
+            var searchData = [key];
+            const analysisData=(await chrome.storage.local.get(searchData))[key];
+
+            while(!this.injected){
+                chrome.runtime.sendMessage({type:"chessvancedextension", message:analysisData})
+            }
+        }
+
+    }
 }
+
 console.log(window.location.href);
 console.log("Content script here");
 scraper = new Scraper();
