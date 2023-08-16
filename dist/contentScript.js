@@ -1,31 +1,66 @@
+function createCoolButton() {
+    const buttonElement = document.createElement('button');
+    buttonElement.classList.add('purple-button');
+
+    buttonElement.style = `
+    grid-row: 2;
+    grid-column: 1/span2;
+    height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: purple;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    `
+    
+    // Create the text span element
+
+    const starSpan = document.createElement('span');
+    starSpan.classList.add('star');
+    starSpan.textContent = '★';
+    starSpan.style = `font-size: 18px;`
+    buttonElement.appendChild(starSpan);
+
+    const textSpan = document.createElement('span');
+    textSpan.classList.add('button-text');
+    textSpan.textContent = 'Free Game Review';
+    textSpan.style = `font-weight: bold;
+    margin-right: 5px;`
+    buttonElement.appendChild(textSpan);
+
+    // Create the star span element
+    
+
+    return buttonElement;
+}
 class Scraper {
 
-    extractStringFromNode(node){
+    extractStringFromNode(node) {
         var result = ""
-        // if (node.children.length == 1) {
-        //     console.log(node.firstChild);
-        //     prefix = node.querySelector("span").getAttribute('data-figurine')
-        // }
-        // var moveString = prefix + node.textContent;
 
         for (const child of node.childNodes) {
             if (child.nodeType === Node.TEXT_NODE) {
-              // If the child is a text node, concatenate its content
-              result += child.textContent;
+                // If the child is a text node, concatenate its content
+                result += child.textContent;
             } else if (child.nodeType === Node.ELEMENT_NODE && child.tagName === 'SPAN') {
-              // If the child is a <span> element, concatenate its color attribute
-              const piece = child.getAttribute('data-figurine');
-              result += piece;
+                // If the child is a <span> element, concatenate its color attribute
+                const piece = child.getAttribute('data-figurine');
+                result += piece;
             }
-        
+
             // If the child is neither text nor <span>, skip it
-          }
+        }
         return result
-    
+
     }
-    
+
     HTMLmovesToSEN(HTMLMoves) {
-        var moveArray= [];
+        var moveArray = [];
 
         const whiteMoves = HTMLMoves.getElementsByClassName("white node");
         const blackMoves = HTMLMoves.getElementsByClassName("black node");
@@ -37,7 +72,7 @@ class Scraper {
                 moveArray.push(this.extractStringFromNode(blackMoves[i]));
             }
         }
-        console.log(moveArray);
+        return moveArray;
 
     }
     async startScraping() {
@@ -45,10 +80,26 @@ class Scraper {
             await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2000ms
             try {
                 var moveContainer = document.querySelectorAll("vertical-move-list")[0]
-                console.log("TST")
+
                 if (moveContainer) {
-                    this.HTMLmovesToSEN(moveContainer);
+                    const moveArray = this.HTMLmovesToSEN(moveContainer);
+                    chrome.runtime.sendMessage({
+                        type: "analyzeMoves",
+                        message: {
+                            moves: moveArray,
+                            gameId: window.location.href,
+                        }
+                    })
                 }
+                var buttonContainer = document.getElementsByClassName("game-review-buttons-component")[0]
+
+                if (buttonContainer) {
+                    if (buttonContainer.children.length == 2) {
+                        const buttonElement = createCoolButton();
+                        buttonContainer.appendChild(buttonElement);
+                    }
+                }
+
             } catch (error) {
                 console.log("some error", error)
             }
@@ -56,8 +107,14 @@ class Scraper {
     }
 }
 //import { Scraper } from "./Scraper.js";
+if(window.location.href == "http://localhost:8000/"){
+    console.log("DA LI JE MOOOGUUUCEEE");
+}
+console.log(window.location.href);
 console.log("Content script here");
-scraper= new Scraper();
+scraper = new Scraper();
 scraper.startScraping();
+
+
 
 //chrome.runtime.sendMessage({"type":"SO", "message":"uci"})

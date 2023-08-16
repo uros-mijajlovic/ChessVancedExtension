@@ -18,13 +18,10 @@ async function hasDocument() {
   const matchedClients = await clients.matchAll({ includeUncontrolled: true, type: 'window' });
 
   for (const client of matchedClients) {
-    console.log(client.url);
     if (client.url.endsWith(OFFSCREEN_DOCUMENT_NAME)) {
-      console.log("VEC GA IMAMO KURVE")
       return true;
     }
   }
-  console.log("NEMAMO GA IMAMO KURVE")
   return false;
 }
 
@@ -53,7 +50,6 @@ async function setupOffscreenDocument(path) {
 
     await creating;
     creating = null;
-    console.log("has document")
     hasDocument();
   }
 }
@@ -74,13 +70,18 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 })
 
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+  
+  console.log("NEW TAB LOADED", changeInfo.url)
+  
+});
+
 setup();
 console.log("KURC");
 var analysisOrchestrator=new AnalysisOrchestrator(memoryHandler);
-const russianGameFen="rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1";
-const moveArray="e4 e5".split(" ");
-const gameId="0206005"
-//analysisOrchestrator.analyzeMoveArray(Array.from(moveArray), gameId);
-analysisOrchestrator.analyzeMoveArray(Array.from(moveArray), gameId);
+
+// const russianGameFen="rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1";
+// const moveArray="e4 e5".split(" ");
+// const gameId="0206005"
 //setupIfNeededAndSendMessage({ "type": "move array", "message": {fen: russianGameFen}});
 

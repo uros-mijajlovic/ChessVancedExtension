@@ -14,9 +14,12 @@ export class AnalysisOrchestrator {
         this.analyzedMoves=[]; // cuva poteze za koje je vec pozvan analyzeGame
 
         chrome.runtime.onMessage.addListener((msg) => {
-            console.log(msg)
             if (msg.type == "stockfishToAnalysis") {
                 this.sendEval(msg.message);
+            }
+
+            if (msg.type == "analyzeMoves") {
+                this.analyzeMoveArray(msg.message.moves, msg.message.gameId);
             }
         })
 
@@ -74,7 +77,6 @@ export class AnalysisOrchestrator {
         if (moveIndex < 2) {
             return "gray";
         }
-        console.log(playersMove, moveIndex);
         const isWhiteMove = moveIndex % 2;
         const beforeMoveAnalysis = this.analysisArray[this.analysisArray.length - 2];
         const afterMoveAnalysis = this.analysisArray[this.analysisArray.length - 1];
@@ -114,7 +116,6 @@ export class AnalysisOrchestrator {
     }
     //postoji sansa da ovde dodje do nekog utrkivanja, najlaksi nacin da se resi je da svaki potez iz analysis-a ima index
     sendEval(dataFromStockfish) {
-        console.log("DATA?!?", dataFromStockfish);
         //chrome.runtime.sendMessage({type:"justLettingEveryoneKnow", message:dataFromStockfish});
         
         if (this.stopped) {
@@ -143,9 +144,11 @@ export class AnalysisOrchestrator {
         moveAnalysis["moveRating"] = this.calculateMoveBrilliance(regularMove, moveIndex);
         this.gameAnalysis.push(moveAnalysis);
 
+        console.log("gotova analiza", this.gameAnalysis);
+
         chrome.storage.local.set({ "currentGameAnalysis": this.gameAnalysis });
 
-        console.log(this.gameAnalysis);
+        
     }
     async stopAnalysis() {
         if (this.running == false) {
