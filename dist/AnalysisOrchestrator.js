@@ -7,11 +7,11 @@ export class AnalysisOrchestrator {
         this.analysisArray = [];
         this.stopped = false;
         this.running = false;
-        this.waitingForStockfish=false;
-        this.currentGameId=null;
-        this.memoryHandler=memoryHandler;
+        this.waitingForStockfish = false;
+        this.currentGameId = null;
+        this.memoryHandler = memoryHandler;
 
-        this.analyzedMoves=[]; // cuva poteze za koje je vec pozvan analyzeGame
+        this.analyzedMoves = []; // cuva poteze za koje je vec pozvan analyzeGame
 
         chrome.runtime.onMessage.addListener((msg) => {
             if (msg.type == "stockfishToAnalysis") {
@@ -28,51 +28,70 @@ export class AnalysisOrchestrator {
         this.gameAnalysis = [];
         this.analysisArray = [];
     }
-    async clearDataIfNewGame(newGameId){
-        
+    async clearDataIfNewGame(newGameId) {
+
         var oldGameId;
         oldGameId = (await chrome.storage.local.get(["currentGameId"])).currentGameId;
-        
 
-        if(oldGameId!=newGameId){
-            try{
+
+        if (oldGameId != newGameId) {
+            try {
                 await chrome.offscreen.closeDocument();
-            }catch(e){
+            } catch (e) {
                 console.log(e);
             }
-            this.analyzedMoves=[];
+            this.analyzedMoves = [];
             console.log("IDEVI NISU ISTI");
             await chrome.storage.local.set({ "currentGameId": newGameId });
-            await chrome.storage.local.set({ "currentGameAnalysis": {}});
-            await chrome.storage.local.set({ "analyzedFens": []});
-            await chrome.storage.local.set({ "fenArray": []});
-            await chrome.storage.local.set({ "moveArray": []});
+            await chrome.storage.local.set({ "currentGameAnalysis": {} });
+            await chrome.storage.local.set({ "analyzedFens": [] });
+            await chrome.storage.local.set({ "fenArray": [] });
+            await chrome.storage.local.set({ "moveArray": [] });
 
-            
+
         }
     }
-    returnNewMoves(newMoveArray){
-        const oldMoveArray=this.analyzedMoves;
-        
-        const newMoves=Array.from(newMoveArray.slice(oldMoveArray.length));
-        
-        console.log(oldMoveArray.length,"oldvsnew", oldMoveArray.toString(),"|", newMoveArray.toString(), "|", newMoves.toString());
-        for (const newMove of newMoves){
+    returnNewMoves(newMoveArray) {
+        const oldMoveArray = this.analyzedMoves;
+
+        const newMoves = Array.from(newMoveArray.slice(oldMoveArray.length));
+
+        console.log(oldMoveArray.length, "oldvsnew", oldMoveArray.toString(), "|", newMoveArray.toString(), "|", newMoves.toString());
+        for (const newMove of newMoves) {
             this.analyzedMoves.push(newMove);
         }
         return newMoves;
     }
-    async analyzeMoveArray(moveArray, gameId){
+    async analyzeMoveArray(moveArray, gameId) {
         await this.clearDataIfNewGame(gameId);
-        moveArray.unshift("")
-        const movesToAnalyze = this.returnNewMoves(moveArray);
+        var oldMoveArrayLength;
+        if (this.totalMoveArray) {
+            oldMoveArrayLength = this.totalMoveArray.length;
+        } else {
+            oldMoveArrayLength = 0
+        }
 
-        var fenArray=sacrifice.moveStringArrayToFenArray(movesToAnalyze);
-        var fromtoMoves = sacrifice.moveStringArrayToMoveArray(movesToAnalyze);
-        console.log("MOVEARRAY", movesToAnalyze, fromtoMoves);
+        this.totalMoveArray = sacrifice.moveStringArrayToMoveArray(moveArray);
+        this.totalFenArray = sacrifice.moveStringArrayToFenArray(moveArray);
 
-        for(let i=0; i<fenArray.length; i++){
-            setupIfNeededAndSendMessage({ "type": "move array", "message": {fen: fenArray[i], move:fromtoMoves[i], index:i}});
+        chrome.storage.local.set({ "moveArray": this.totalMoveArray });
+        chrome.storage.local.set({ "fenArray": this.totalFenArray });
+
+
+        var fenArray = sacrifice.moveStringArrayToFenArray(moveArray);
+        var fromtoMoves = sacrifice.moveStringArrayToMoveArray(moveArray);
+
+        fenArray = Array.from(fenArray.slice(oldMoveArrayLength));
+        fromtoMoves = Array.from(fromtoMoves.slice(oldMoveArrayLength));
+
+
+        for (let i = 0; i < fenArray.length; i++) {
+            if (i == 0) {
+                setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: "", index: i } });
+            } else {
+                setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: fromtoMoves[i - 1].fromto, index: i } });
+
+            }
         }
 
 
@@ -121,7 +140,7 @@ export class AnalysisOrchestrator {
     //postoji sansa da ovde dodje do nekog utrkivanja, najlaksi nacin da se resi je da svaki potez iz analysis-a ima index
     sendEval(dataFromStockfish) {
         //chrome.runtime.sendMessage({type:"justLettingEveryoneKnow", message:dataFromStockfish});
-        
+
         if (this.stopped) {
             return;
         }
@@ -150,9 +169,10 @@ export class AnalysisOrchestrator {
 
         console.log("gotova analiza", this.gameAnalysis);
 
-        chrome.storage.local.set({ "currentGameAnalysis": this.gameAnalysis });
+        chrome.storage.local.set({ "analysisData": this.gameAnalysis });
 
-        
+
+
     }
     async stopAnalysis() {
         if (this.running == false) {
@@ -167,53 +187,54 @@ export class AnalysisOrchestrator {
         console.log("stopped and started new");
         //continue
     }
-    async updateData(fenMoves, moveArray, gameId){
-        if(this.currentGameId!=gameId){
+    async updateData(fenMoves, moveArray, gameId) {
+        if (this.currentGameId != gameId) {
             await restartStockfishOrchestrator();
-            this.currentGameId=gameId;
+            this.currentGameId = gameId;
         }
         this.analyzeGame(fenMoves, moveArray);
 
     }
-    async restartStockfishOrchestrator(){
-        if(this.stockfishOrchestrator){
+    async restartStockfishOrchestrator() {
+        if (this.stockfishOrchestrator) {
             this.stockfishOrchestrator.deleteWorker();
-          }
-      
-          await this.stopAnalysis();
-      
-          this.stockfishOrchestrator = await createStockfishOrchestrator(false);
-          
-          this.stockfishOrchestrator.analysisOrchestrator=this;
-          
-          this.stockfishOrchestrator.setCallback((data) => { this.sendEval(data) });
+        }
+
+        await this.stopAnalysis();
+
+        this.stockfishOrchestrator = await createStockfishOrchestrator(false);
+
+        this.stockfishOrchestrator.analysisOrchestrator = this;
+
+        this.stockfishOrchestrator.setCallback((data) => { this.sendEval(data) });
     }
     async analyzeGame(fenMoves, moveArray) {
         console.log("Propusten dalje")
-    
-        this.running=true;
-    
+
+        this.running = true;
+
         this.gameAnalysis = []
         this.moveArray = moveArray;
         this.fenArray = fenMoves;
-    
+
+
         for (let i = 0; i < fenMoves.length; i++) {
-          const fenMove = fenMoves[i];
-    
-          if (this.stopped) {
-            console.log("nasilno stopiram")
-            break;
-          }
-          if (i == 0) {
-            await this.stockfishOrchestrator.waitForRun(fenMove, "", i);
-          } else {
-            await this.stockfishOrchestrator.waitForRun(fenMove, moveArray[i - 1], i);
-          }
-          //console.log(fenMove);
+            const fenMove = fenMoves[i];
+
+            if (this.stopped) {
+                console.log("nasilno stopiram")
+                break;
+            }
+            if (i == 0) {
+                await this.stockfishOrchestrator.waitForRun(fenMove, "", i);
+            } else {
+                await this.stockfishOrchestrator.waitForRun(fenMove, moveArray[i - 1], i);
+            }
+            //console.log(fenMove);
         }
         console.log("gotov")
-        this.stopped=false;
-        this.running=false;
-      }
-      
+        this.stopped = false;
+        this.running = false;
+    }
+
 }

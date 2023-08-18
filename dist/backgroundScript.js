@@ -63,6 +63,9 @@ export async function setupIfNeededAndSendMessage(msg) {
 
 
 chrome.runtime.onMessage.addListener((msg) => {
+  if(msg.type=="fromContentScript"){
+    console.log("IPAK SE OKRECE")
+  }
   if(msg.type=="stockfish"){
     if((msg.message)=="readyok"){
       stockfishReady=true;

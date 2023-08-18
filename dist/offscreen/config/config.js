@@ -1,6 +1,6 @@
 export var Config;
 (function (Config) {
-    Config.STOCKFISH_MOVETIME = 500;
+    Config.STOCKFISH_MOVETIME = 5000;
     let MOVE_TYPE;
     (function (MOVE_TYPE) {
         MOVE_TYPE[MOVE_TYPE["MOVE_REGULAR"] = 0] = "MOVE_REGULAR";

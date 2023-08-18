@@ -6,14 +6,19 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "web_accessible_resources": [{
+    "resources": ["contentScript.js"],
+    "matches": ["<all_urls>"]
+  }],
   "content_scripts": [
     {
       "matches": [
         "<all_urls>"
       ],
       "js": [
-        "contentScript.js"
-      ]
+        "contentScriptWrapper.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "background": {
@@ -30,5 +35,8 @@
     "debugger",
     "tabs",
     "offscreen"
-  ]
+  ],
+  "externally_connectable": {
+    "matches": ["<all_urls>"]
+  }
 }
