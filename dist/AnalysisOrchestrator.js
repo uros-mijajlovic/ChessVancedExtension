@@ -1,16 +1,18 @@
 //import * as Chess from './dependencies/chess.js';
 import * as sacrifice from './sacrifice.js';
-import { setupIfNeededAndSendMessage } from './backgroundScript.js';
+import { MemoryHandler } from "./MemoryHandler.js"
+
 export class AnalysisOrchestrator {
-    constructor(memoryHandler) {
+    constructor() {
         this.gameAnalysis = [];
         this.analysisArray = [];
         this.stopped = false;
         this.running = false;
         this.waitingForStockfish = false;
         this.currentGameId = null;
-        this.memoryHandler = memoryHandler;
-        this.moveQueue=[];
+        this.memoryHandler = new MemoryHandler();
+        this.stockfishReady = false;
+        this.moveQueue = [];
 
         this.analyzedMoves = []; // cuva poteze za koje je vec pozvan analyzeGame
 
@@ -22,7 +24,17 @@ export class AnalysisOrchestrator {
             if (msg.type == "analyzeMoves") {
                 this.analyzeMoveArray(msg.message.moves, msg.message.gameId);
             }
+
+            if (msg.type == "fromContentScript") {
+                console.log("IPAK SE OKRECE")
+            }
+            if (msg.type == "stockfish") {
+                if ((msg.message) == "readyok") {
+                    this.stockfishReady = true;
+                }
+            }
         })
+
         this.analyzeMovesThread();
 
     }
@@ -31,14 +43,57 @@ export class AnalysisOrchestrator {
         this.analysisArray = [];
     }
 
-    async analyzeMovesThread(){
-        while (true){
-            await new Promise((resolve) => setTimeout(resolve, 200));
-            if(this.moveQueue.length>0){
+    async hasDocument() {
 
-                var {fen, move, index} = this.moveQueue.shift();
+        const matchedClients = await clients.matchAll({ includeUncontrolled: true, type: 'window' });
+
+        for (const client of matchedClients) {
+            if (client.url.endsWith("offscreen.html")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    async waitUntilStockfishReady() {
+        while (this.stockfishReady == false) {
+            console.log("stockfish is not readyy")
+            chrome.runtime.sendMessage({ "type": "move array", "message": "isready" });
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+
+
+    async setupStockfish() {
+        
+        const path = "./offscreen/" + "offscreen.html"
+        if (await this.hasDocument()) {
+            return;
+        }
+        await chrome.offscreen.createDocument({
+            url: path,
+            reasons: [chrome.offscreen.Reason.WORKERS],
+            justification: 'need to spawn web worker for stockfish',
+        });
+
+    }
+    async setupIfNeededAndSendMessage(msg) {
+        await this.setupStockfish();
+        await this.waitUntilStockfishReady(msg.gameId);
+        this.stockfishReady = false;
+        console.log("spreman")
+        chrome.runtime.sendMessage(msg);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    async analyzeMovesThread() {
+        while (true) {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            if (this.moveQueue.length > 0) {
+
+                var { fen, move, index } = this.moveQueue.shift();
                 console.log("popped from queue ", fen, move, index);
-                await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fen, move: move, index: index } });
+                await this.setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fen, move: move, index: index, gameId: this.gameId } });
             }
         }
     }
@@ -47,18 +102,18 @@ export class AnalysisOrchestrator {
         var oldGameId;
         oldGameId = (await chrome.storage.local.get(["currentGameId"])).currentGameId;
 
-        //console.log(oldGameId, newGameId);
-
-
         if (oldGameId != newGameId) {
+            this.gameId = newGameId;
             //console.log("MORAM DA OBRISEM STARI")
             try {
                 await chrome.offscreen.closeDocument();
             } catch (e) {
                 console.log(e);
             }
+            await this.setupStockfish();
             this.analyzedMoves = [];
-            console.log("IDEVI NISU ISTI");
+            this.moveQueue=[]
+            console.log("IDEVI NISU ISTI", oldGameId, newGameId);
             await chrome.storage.local.set({ "currentGameId": newGameId });
             await chrome.storage.local.set({ "analysisData": [] });
             await chrome.storage.local.set({ "movearray": [] });
@@ -85,7 +140,7 @@ export class AnalysisOrchestrator {
         } else {
             oldFenArrayLength = 0
         }
-        
+
         this.totalMoveArray = sacrifice.moveStringArrayToMoveArray(moveArray);
         this.totalFenArray = sacrifice.moveStringArrayToFenArray(moveArray);
 
@@ -101,7 +156,7 @@ export class AnalysisOrchestrator {
 
 
         for (let i = 0; i < fenArray.length; i++) {
-            const index=oldFenArrayLength+i;
+            const index = oldFenArrayLength + i;
             if (i == 0) {
                 this.moveQueue.push({ fen: fenArray[i], move: "", index: index })
                 //await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: "", index: index } });
@@ -161,6 +216,12 @@ export class AnalysisOrchestrator {
         if (this.stopped) {
             return;
         }
+        var gameId = dataFromStockfish["gameId"]
+
+        if (gameId!=this.gameId){
+            return;
+        }
+
         var dataForFen = dataFromStockfish["positionEvaluation"];
         var FENstring = dataFromStockfish["FENstring"];
         var regularMove = dataFromStockfish["regularMove"];

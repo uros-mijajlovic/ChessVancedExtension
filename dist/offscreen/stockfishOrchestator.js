@@ -22,7 +22,7 @@ export async function createStockfishOrchestrator(sendEvalAfterEveryMove) {
             } else {
                 console.log("PRINTRAC");
                 chrome.runtime.sendMessage({ "type": "stockfishBack", "message": msg })
-                stockfishOrchestratorInst.waitForRun(msg.message.fen, msg.message.move, msg.message.index);
+                stockfishOrchestratorInst.waitForRun(msg.message.fen, msg.message.move, msg.message.index, msg.message.gameId);
             }
         }
     })
@@ -100,12 +100,14 @@ class stockfishOrchestrator {
         dataFromStockfish["FENstring"] = this.currentFEN;
         dataFromStockfish["regularMove"] = this.currentRegularMove;
         dataFromStockfish["moveIndex"] = this.moveIndex;
+        dataFromStockfish["gameId"]=this.gameId;
         return dataFromStockfish;
     }
-    async getAnalsysForFenPosition(fenPosition, move, index) {
+    async getAnalsysForFenPosition(fenPosition, move, index, gameId) {
         this.currentFEN = fenPosition;
         this.moveIndex=index;
         this.currentRegularMove=move;
+        this.gameId=gameId
 
         chrome.runtime.sendMessage({ "type": "stockfishBack", "result": fenPosition })
         const cachedResponse = await this.checkCache(fenPosition);
@@ -120,12 +122,13 @@ class stockfishOrchestrator {
         this.stockfishWorker.postMessage(`position fen ${fenPosition}`);
         this.stockfishWorker.postMessage(`go movetime ${this.moveTimeLengthMs}`);
     }
-    async waitForRun(fenPosition, move, index) {
+    async waitForRun(fenPosition, move, index, gameId) {
+
         while (this.isCurrentlyWorking) {
             await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for 100ms
         }
         this.isCurrentlyWorking = true;
-        await this.getAnalsysForFenPosition(fenPosition, move, index);
+        await this.getAnalsysForFenPosition(fenPosition, move, index, gameId);
     }
     async stopAndStartNewAnalysis(fenPosition) {
         this.stockfishWorker.postMessage(`stop`);
