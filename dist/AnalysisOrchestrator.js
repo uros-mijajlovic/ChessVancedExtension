@@ -10,6 +10,7 @@ export class AnalysisOrchestrator {
         this.waitingForStockfish = false;
         this.currentGameId = null;
         this.memoryHandler = memoryHandler;
+        this.moveQueue=[];
 
         this.analyzedMoves = []; // cuva poteze za koje je vec pozvan analyzeGame
 
@@ -22,19 +23,35 @@ export class AnalysisOrchestrator {
                 this.analyzeMoveArray(msg.message.moves, msg.message.gameId);
             }
         })
+        this.analyzeMovesThread();
 
     }
     clearData() {
         this.gameAnalysis = [];
         this.analysisArray = [];
     }
+
+    async analyzeMovesThread(){
+        while (true){
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            if(this.moveQueue.length>0){
+
+                var {fen, move, index} = this.moveQueue.shift();
+                console.log("popped from queue ", fen, move, index);
+                await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fen, move: move, index: index } });
+            }
+        }
+    }
     async clearDataIfNewGame(newGameId) {
 
         var oldGameId;
         oldGameId = (await chrome.storage.local.get(["currentGameId"])).currentGameId;
 
+        //console.log(oldGameId, newGameId);
+
 
         if (oldGameId != newGameId) {
+            //console.log("MORAM DA OBRISEM STARI")
             try {
                 await chrome.offscreen.closeDocument();
             } catch (e) {
@@ -43,12 +60,10 @@ export class AnalysisOrchestrator {
             this.analyzedMoves = [];
             console.log("IDEVI NISU ISTI");
             await chrome.storage.local.set({ "currentGameId": newGameId });
-            await chrome.storage.local.set({ "currentGameAnalysis": {} });
+            await chrome.storage.local.set({ "analysisData": [] });
+            await chrome.storage.local.set({ "movearray": [] });
+            await chrome.storage.local.set({ "fenarray": [] });
             await chrome.storage.local.set({ "analyzedFens": [] });
-            await chrome.storage.local.set({ "fenArray": [] });
-            await chrome.storage.local.set({ "moveArray": [] });
-
-
         }
     }
     returnNewMoves(newMoveArray) {
@@ -64,13 +79,13 @@ export class AnalysisOrchestrator {
     }
     async analyzeMoveArray(moveArray, gameId) {
         await this.clearDataIfNewGame(gameId);
-        var oldMoveArrayLength;
-        if (this.totalMoveArray) {
-            oldMoveArrayLength = this.totalMoveArray.length;
+        var oldFenArrayLength;
+        if (this.totalFenArray) {
+            oldFenArrayLength = this.totalFenArray.length;
         } else {
-            oldMoveArrayLength = 0
+            oldFenArrayLength = 0
         }
-
+        
         this.totalMoveArray = sacrifice.moveStringArrayToMoveArray(moveArray);
         this.totalFenArray = sacrifice.moveStringArrayToFenArray(moveArray);
 
@@ -81,15 +96,18 @@ export class AnalysisOrchestrator {
         var fenArray = sacrifice.moveStringArrayToFenArray(moveArray);
         var fromtoMoves = sacrifice.moveStringArrayToMoveArray(moveArray);
 
-        fenArray = Array.from(fenArray.slice(oldMoveArrayLength));
-        fromtoMoves = Array.from(fromtoMoves.slice(oldMoveArrayLength));
+        fenArray = Array.from(fenArray.slice(oldFenArrayLength));
+        fromtoMoves = Array.from(fromtoMoves.slice(oldFenArrayLength));
 
 
         for (let i = 0; i < fenArray.length; i++) {
+            const index=oldFenArrayLength+i;
             if (i == 0) {
-                setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: "", index: i } });
+                this.moveQueue.push({ fen: fenArray[i], move: "", index: index })
+                //await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: "", index: index } });
             } else {
-                setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: fromtoMoves[i - 1].fromto, index: i } });
+                this.moveQueue.push({ fen: fenArray[i], move: fromtoMoves[i - 1].fromto, index: index })
+                //await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: fromtoMoves[i - 1].fromto, index: index } });
 
             }
         }
@@ -134,7 +152,6 @@ export class AnalysisOrchestrator {
         if (afterMoveCpDiscrepancy < -200) {
             return "mistake";
         }
-        // if(afterMoveCpDiscrepancy)
         return "gray";
     }
     //postoji sansa da ovde dodje do nekog utrkivanja, najlaksi nacin da se resi je da svaki potez iz analysis-a ima index
@@ -169,6 +186,7 @@ export class AnalysisOrchestrator {
 
         console.log("gotova analiza", this.gameAnalysis);
 
+        chrome.storage.local.set({ "analyzedFens": this.analysisArray });
         chrome.storage.local.set({ "analysisData": this.gameAnalysis });
 
 

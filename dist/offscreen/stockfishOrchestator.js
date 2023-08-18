@@ -16,7 +16,9 @@ export async function createStockfishOrchestrator(sendEvalAfterEveryMove) {
         console.log(msg)
         if (msg.type == "move array") {
             if (msg.message == "isready") {
-                chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
+                if(stockfishOrchestratorInst.isCurrentlyWorking==false){
+                    chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
+                }
             } else {
                 console.log("PRINTRAC");
                 chrome.runtime.sendMessage({ "type": "stockfishBack", "message": msg })
@@ -39,7 +41,7 @@ class stockfishOrchestrator {
         else {
             this.moveTimeLengthMs = Config.STOCKFISH_MOVETIME;
         }
-        this.isCurrentlyWorking = null;
+        this.isCurrentlyWorking = false;
         this.currentFEN = null;
         this.analysisOrchestrator = null;
         this.whiteMove = true;

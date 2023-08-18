@@ -27,6 +27,7 @@ async function hasDocument() {
 
 async function waitUntilStockfishReady(){
   while(stockfishReady==false){
+    console.log("stockfish is not readyy")
     chrome.runtime.sendMessage({"type":"move array", "message":"isready"});
     await new Promise(resolve => setTimeout(resolve, 500));
   }
@@ -57,8 +58,11 @@ async function setupOffscreenDocument(path) {
 export async function setupIfNeededAndSendMessage(msg) {
   await setupOffscreenDocument(OFFSCREEN_DIRECTORY_PATH+OFFSCREEN_DOCUMENT_NAME)
   await waitUntilStockfishReady();
+  stockfishReady=false;
   console.log("spreman")
   chrome.runtime.sendMessage(msg);
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await waitUntilStockfishReady();
 }
 
 
@@ -75,7 +79,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   
-  console.log("NEW TAB LOADED", changeInfo.url)
+  //console.log("NEW TAB LOADED", changeInfo.url)
   
 });
 

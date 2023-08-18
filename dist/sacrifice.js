@@ -26,10 +26,6 @@ export function moveStringArrayToMoveArray(moveStringArray) {
         move.fromto = move.from + move.to;
     });
 
-    if (moveStringArray[0] == "") {
-        moves.unshift({fromto:""})
-    }
-
     return moves;
 }
 

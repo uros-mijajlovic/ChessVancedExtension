@@ -146,6 +146,14 @@ async function loadAnalysisData() {
     analysisDoc.setAttribute("fenArray", JSON.stringify(fenArray));
 
 
+
+    key = "analyzedFens"
+    searchData = [key];
+
+    const analyzedFens = (await chrome.storage.local.get(searchData))[key];
+    analysisDoc.setAttribute("analyzedFens", JSON.stringify(analyzedFens));
+
+
     (document.head || document.documentElement).appendChild(analysisDoc);
 
 
