@@ -2,6 +2,8 @@
 import * as sacrifice from './sacrifice.js';
 import { MemoryHandler } from "./MemoryHandler.js"
 
+const WEBSITE_URL = "http://localhost:8000/";
+
 export class AnalysisOrchestrator {
     constructor() {
         this.gameAnalysis = [];
@@ -35,8 +37,29 @@ export class AnalysisOrchestrator {
             }
         })
 
+
+
+        chrome.tabs.onActivated.addListener(function (activeInfo) {
+            chrome.tabs.get(activeInfo.tabId, function (tab) {
+
+                if (tab && tab.url) {
+                    this.stopExtensionIfOnWebsite(tab.url)
+                }
+            });
+        });
+        chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+            if (tab.active) {
+                this.stopExtensionIfOnWebsite(tab.url)
+                
+            }
+        })
+
         this.analyzeMovesThread();
 
+    }
+
+    stopExtensionIfOnWebsite(tabUrl){
+        return;
     }
     clearData() {
         this.gameAnalysis = [];
@@ -65,7 +88,7 @@ export class AnalysisOrchestrator {
 
 
     async setupStockfish() {
-        
+
         const path = "./offscreen/" + "offscreen.html"
         if (await this.hasDocument()) {
             return;
@@ -112,7 +135,8 @@ export class AnalysisOrchestrator {
             }
             await this.setupStockfish();
             this.analyzedMoves = [];
-            this.moveQueue=[]
+            this.moveQueue = []
+            this.gameAnalysis=[]
             console.log("IDEVI NISU ISTI", oldGameId, newGameId);
             await chrome.storage.local.set({ "currentGameId": newGameId });
             await chrome.storage.local.set({ "analysisData": [] });
@@ -218,7 +242,7 @@ export class AnalysisOrchestrator {
         }
         var gameId = dataFromStockfish["gameId"]
 
-        if (gameId!=this.gameId){
+        if (gameId != this.gameId) {
             return;
         }
 
@@ -286,34 +310,6 @@ export class AnalysisOrchestrator {
         this.stockfishOrchestrator.analysisOrchestrator = this;
 
         this.stockfishOrchestrator.setCallback((data) => { this.sendEval(data) });
-    }
-    async analyzeGame(fenMoves, moveArray) {
-        console.log("Propusten dalje")
-
-        this.running = true;
-
-        this.gameAnalysis = []
-        this.moveArray = moveArray;
-        this.fenArray = fenMoves;
-
-
-        for (let i = 0; i < fenMoves.length; i++) {
-            const fenMove = fenMoves[i];
-
-            if (this.stopped) {
-                console.log("nasilno stopiram")
-                break;
-            }
-            if (i == 0) {
-                await this.stockfishOrchestrator.waitForRun(fenMove, "", i);
-            } else {
-                await this.stockfishOrchestrator.waitForRun(fenMove, moveArray[i - 1], i);
-            }
-            //console.log(fenMove);
-        }
-        console.log("gotov")
-        this.stopped = false;
-        this.running = false;
     }
 
 }

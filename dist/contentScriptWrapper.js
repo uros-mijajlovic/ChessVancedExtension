@@ -1,44 +1,76 @@
-function createCoolButton() {
-    const buttonElement = document.createElement('button');
-    buttonElement.classList.add('purple-button');
-
-    buttonElement.style = `
-    grid-row: 2;
-    grid-column: 1/span2;
-    height: 50px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background-color: purple;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    `
-
-    // Create the text span element
-
-    const starSpan = document.createElement('span');
-    starSpan.classList.add('star');
-    starSpan.textContent = '★';
-    starSpan.style = `font-size: 18px;`
-    buttonElement.appendChild(starSpan);
-
-    const textSpan = document.createElement('span');
-    textSpan.classList.add('button-text');
-    textSpan.textContent = 'Free Game Review';
-    textSpan.style = `font-weight: bold;
-    margin-right: 5px;`
-    buttonElement.appendChild(textSpan);
-
-    // Create the star span element
 
 
-    return buttonElement;
-}
 class Scraper {
+
+    gameReviewButtonClickHandler() {
+        const moveArray = this.returnArrayOfMoves();
+        
+        
+        if (moveArray) {
+            chrome.runtime.sendMessage({
+                type: "analyzeMoves",
+                message: {
+                    moves: moveArray,
+                    gameId: window.location.href,
+                }
+            })
+        }
+
+        window.open("http://localhost:8000/", "_blank");
+    }
+    tryToCreateButton() {
+        var buttonContainer = document.getElementsByClassName("game-review-buttons-component")[0]
+
+        if (buttonContainer) {
+            if (buttonContainer.children.length == 2) {
+                const buttonElement = this.createCoolButton();
+
+                buttonElement.addEventListener("click", () => { this.gameReviewButtonClickHandler() });
+
+
+                buttonContainer.appendChild(buttonElement);
+            }
+        }
+    }
+
+
+    createCoolButton() {
+        const buttonElement = document.createElement('button');
+        buttonElement.classList.add('purple-button');
+
+        buttonElement.style = `
+        grid-row: 2;
+        grid-column: 1/span2;
+        height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: purple;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        `
+
+        // Create the text span element
+
+        const starSpan = document.createElement('span');
+        starSpan.classList.add('star');
+        starSpan.textContent = '★';
+        starSpan.style = `font-size: 18px;`
+        buttonElement.appendChild(starSpan);
+
+        const textSpan = document.createElement('span');
+        textSpan.classList.add('button-text');
+        textSpan.textContent = 'Free Game Review';
+        textSpan.style = `font-weight: bold;
+        margin-right: 5px;`
+        buttonElement.appendChild(textSpan);
+
+        return buttonElement;
+    }
     extractStringFromNode(node) {
         var result = ""
 
@@ -74,35 +106,47 @@ class Scraper {
         return moveArray;
 
     }
+    isLiveGame() {
+        return document.getElementsByClassName("new-game-buttons-component").length == 0
+    }
+    returnArrayOfMoves() {
+        var moveContainer = document.querySelectorAll("vertical-move-list")[0]
+        if (moveContainer) {
+            const moveArray = this.HTMLmovesToSEN(moveContainer);
+            return moveArray;
+        } else {
+            return null;
+        }
+    }
     async startScraping() {
         while (true) {
+            
             await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2000ms
-            try {
-                var moveContainer = document.querySelectorAll("vertical-move-list")[0]
+            this.tryToCreateButton();
+            if (!this.isLiveGame()) {
+                
+                continue
+            } else {
 
-                if (moveContainer) {
-                    const moveArray = this.HTMLmovesToSEN(moveContainer);   
-                    
-                    chrome.runtime.sendMessage({
-                        type: "analyzeMoves",
-                        message: {
-                            moves: moveArray,
-                            gameId: window.location.href,
-                        }
-                    })
-                }
-                var buttonContainer = document.getElementsByClassName("game-review-buttons-component")[0]
+                try {
 
-                if (buttonContainer) {
-                    if (buttonContainer.children.length == 2) {
-                        const buttonElement = createCoolButton();
-                        buttonContainer.appendChild(buttonElement);
+                    const moveArray = this.returnArrayOfMoves();
+
+                    if (moveArray) {
+                        chrome.runtime.sendMessage({
+                            type: "analyzeMoves",
+                            message: {
+                                moves: moveArray,
+                                gameId: window.location.href,
+                            }
+                        })
                     }
-                }
 
-            } catch (error) {
-                console.log("some error", error)
+                } catch (error) {
+                    console.log("some error", error)
+                }
             }
+
         }
     }
 }
@@ -161,7 +205,9 @@ async function loadAnalysisData() {
 if (window.location.href == "http://localhost:8000/") {
 
     loadInjector();
-
+    //ako smo injectovali taj gejm onda nas ne interesuje vise ?!?
+    //jos lakse, samo cemo da proverimo da li je gejm running da bi poslali moves
+    //GENIUS
 
 } else {
     console.log("start scrapin");
