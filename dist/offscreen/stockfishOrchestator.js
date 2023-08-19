@@ -20,7 +20,7 @@ export async function createStockfishOrchestrator(sendEvalAfterEveryMove) {
                     chrome.runtime.sendMessage({ "type": "stockfish", "message": "readyok" })
                 }
             } else {
-                console.log("PRINTRAC");
+                console.log(msg);
                 chrome.runtime.sendMessage({ "type": "stockfishBack", "message": msg })
                 stockfishOrchestratorInst.waitForRun(msg.message.fen, msg.message.move, msg.message.index, msg.message.gameId);
             }

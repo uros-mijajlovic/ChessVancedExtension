@@ -4,14 +4,14 @@ class Scraper {
 
     gameReviewButtonClickHandler() {
         const moveArray = this.returnArrayOfMoves();
-        
+        console.log(moveArray);
         
         if (moveArray) {
             chrome.runtime.sendMessage({
                 type: "analyzeMoves",
                 message: {
-                    moves: moveArray,
-                    gameId: window.location.href,
+                    moves: moveArray.moveArray,
+                    gameId: moveArray.gameId,
                 }
             })
         }
@@ -110,12 +110,13 @@ class Scraper {
         return document.getElementsByClassName("new-game-buttons-component").length == 0
     }
     returnArrayOfMoves() {
+        const currentGameId=window.location.href;
         var moveContainer = document.querySelectorAll("vertical-move-list")[0]
         if (moveContainer) {
             const moveArray = this.HTMLmovesToSEN(moveContainer);
-            return moveArray;
+            return {moveArray:moveArray, gameId:currentGameId};
         } else {
-            return null;
+            return {moveArray:null, gameId:null};
         }
     }
     async startScraping() {
@@ -130,14 +131,14 @@ class Scraper {
 
                 try {
 
-                    const moveArray = this.returnArrayOfMoves();
+                    const {moveArray, gameId} = this.returnArrayOfMoves();
 
                     if (moveArray) {
                         chrome.runtime.sendMessage({
                             type: "analyzeMoves",
                             message: {
                                 moves: moveArray,
-                                gameId: window.location.href,
+                                gameId: gameId,
                             }
                         })
                     }
