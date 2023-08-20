@@ -1,20 +1,26 @@
 
 
 class Scraper {
-
-    gameReviewButtonClickHandler() {
-        const moveArray = this.returnArrayOfMoves();
-        console.log(moveArray);
-        
-        if (moveArray) {
-            chrome.runtime.sendMessage({
-                type: "analyzeMoves",
-                message: {
-                    moves: moveArray.moveArray,
-                    gameId: moveArray.gameId,
-                }
-            })
+    getPlayerSide() {
+        try {
+            var oppositePlayerBar = document.getElementById("board-layout-player-top")
+            
+            var clockItem = oppositePlayerBar.getElementsByClassName("clock-component")[0]
+            
+            if(clockItem.className.includes("white")){
+                return "black"
+            }else{
+                return "white"
+            }
+        } catch (e) {
+            console.log(e);
+            return "white"
         }
+
+
+    }
+    gameReviewButtonClickHandler() {
+        this.sendCurrentGameState();
 
         window.open("http://localhost:8000/", "_blank");
     }
@@ -110,38 +116,47 @@ class Scraper {
         return document.getElementsByClassName("new-game-buttons-component").length == 0
     }
     returnArrayOfMoves() {
-        const currentGameId=window.location.href;
+
+        const currentGameId = window.location.href;
+        const playerSide=this.getPlayerSide();
         var moveContainer = document.querySelectorAll("vertical-move-list")[0]
         if (moveContainer) {
             const moveArray = this.HTMLmovesToSEN(moveContainer);
-            return {moveArray:moveArray, gameId:currentGameId};
+
+            return { moveArray: moveArray, gameId: currentGameId };
         } else {
-            return {moveArray:null, gameId:null};
+            return { moveArray: null, gameId: null, playerSide:playerSide };
+        }
+    }
+    sendCurrentGameState(){
+        const { moveArray, gameId, playerSide } = this.returnArrayOfMoves();
+
+        if (moveArray) {
+            chrome.runtime.sendMessage({
+                type: "analyzeMoves",
+                message: {
+                    moves: moveArray,
+                    gameId: gameId,
+                    playerSide:playerSide
+                }
+            })
         }
     }
     async startScraping() {
         while (true) {
-            
+
             await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2000ms
             this.tryToCreateButton();
+            
             if (!this.isLiveGame()) {
-                
+
                 continue
             } else {
 
                 try {
-
-                    const {moveArray, gameId} = this.returnArrayOfMoves();
-
-                    if (moveArray) {
-                        chrome.runtime.sendMessage({
-                            type: "analyzeMoves",
-                            message: {
-                                moves: moveArray,
-                                gameId: gameId,
-                            }
-                        })
-                    }
+                    
+                    this.sendCurrentGameState();
+                    
 
                 } catch (error) {
                     console.log("some error", error)

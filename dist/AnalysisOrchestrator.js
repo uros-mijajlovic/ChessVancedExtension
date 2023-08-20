@@ -24,7 +24,7 @@ export class AnalysisOrchestrator {
             }
 
             if (msg.type == "analyzeMoves") {
-                this.analyzeMoveArray(msg.message.moves, msg.message.gameId);
+                this.analyzeMoveArray(msg.message.moves, msg.message.gameId, msg.message.playerSide);
             }
 
             if (msg.type == "fromContentScript") {
@@ -160,7 +160,7 @@ export class AnalysisOrchestrator {
         }
         return newMoves;
     }
-    async analyzeMoveArray(moveArray, gameId) {
+    async analyzeMoveArray(moveArray, gameId, playerSide) {
         await this.clearDataIfNewGame(gameId);
         var oldFenArrayLength;
         if (this.totalFenArray) {
