@@ -1,8 +1,7 @@
 //import * as Chess from './dependencies/chess.js';
 import * as sacrifice from './sacrifice.js';
 import { MemoryHandler } from "./MemoryHandler.js"
-
-const WEBSITE_URL = "http://localhost:8000/";
+import { WEBSITE_URL } from './config.js';
 
 export class AnalysisOrchestrator {
     constructor() {
@@ -15,6 +14,7 @@ export class AnalysisOrchestrator {
         this.memoryHandler = new MemoryHandler();
         this.stockfishReady = false;
         this.moveQueue = [];
+        this.analysisBlocked=false;
 
         this.analyzedMoves = []; // cuva poteze za koje je vec pozvan analyzeGame
 
@@ -59,7 +59,11 @@ export class AnalysisOrchestrator {
     }
 
     stopExtensionIfOnWebsite(tabUrl){
-        return;
+        if(tabUrl==WEBSITE_URL){
+            this.analysisBlocked=true;
+        }else{
+            this.analysisBlocked=false;
+        }
     }
     clearData() {
         this.gameAnalysis = [];
@@ -101,18 +105,20 @@ export class AnalysisOrchestrator {
 
     }
     async setupIfNeededAndSendMessage(msg) {
+        
         await this.setupStockfish();
         await this.waitUntilStockfishReady(msg.gameId);
         this.stockfishReady = false;
         console.log("spreman")
         chrome.runtime.sendMessage(msg);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
     }
 
     async analyzeMovesThread() {
         while (true) {
             await new Promise((resolve) => setTimeout(resolve, 200));
-            if (this.moveQueue.length > 0) {
+            if (!this.analysisBlocked && this.moveQueue.length > 0) {
 
                 var { fen, move, index } = this.moveQueue.shift();
                 console.log("popped from queue ", fen, move, index, { fen: fen, move: move, index: index, gameId: this.gameId });
@@ -162,6 +168,9 @@ export class AnalysisOrchestrator {
     }
     async analyzeMoveArray(moveArray, gameId, playerSide) {
         await this.clearDataIfNewGame(gameId);
+
+        this.playerSide=playerSide;
+
         var oldFenArrayLength;
         if (this.totalFenArray) {
             oldFenArrayLength = this.totalFenArray.length;
@@ -174,6 +183,7 @@ export class AnalysisOrchestrator {
 
         chrome.storage.local.set({ "moveArray": this.totalMoveArray });
         chrome.storage.local.set({ "fenArray": this.totalFenArray });
+        chrome.storage.local.set({ "playerSide": this.playerSide });
 
 
         // for (let i = 0; i < fenArray.length; i++) {
@@ -265,17 +275,21 @@ export class AnalysisOrchestrator {
         const centipawns = dataForFen[0]["CP"];
         //console.log(FENstring, centipawns, dataForFen);
         if (dataForFen[0]["cpOrMate"] == "mate") {
-            console.log(centipawns);
-            console.log(dataForFen);
-            const mateForOpposite = (centipawns > 0) ? 1 : -1;
-            moveAnalysis["CP"] = "M" + centipawns.toString();
-            moveAnalysis["evaluation"] = mateForOpposite * 49;
-        }
-        else {
-            var evalScoreForGraph = 50 * (2 / (1 + Math.exp(-0.004 * centipawns)) - 1);
+            if(dataForFen[0]["isCheckmated"]==true){
+              moveAnalysis["CP"] = "M0";
+              moveAnalysis["evaluation"] = -centipawns * 49;
+            }else{
+              const mateForOpposite = (centipawns > 0) ? 1 : -1;
+              moveAnalysis["CP"] = "M" + centipawns.toString();
+              moveAnalysis["evaluation"] = mateForOpposite * 49;
+      
+            }
+      
+          } else {
+            var evalScoreForGraph = 50 * (2 / (1 + Math.exp(-0.004 * centipawns)) - 1)
             moveAnalysis["evaluation"] = evalScoreForGraph;
             moveAnalysis["CP"] = centipawns;
-        }
+          }
         moveAnalysis["moveRating"] = this.calculateMoveBrilliance(regularMove, moveIndex);
         this.gameAnalysis.push(moveAnalysis);
 

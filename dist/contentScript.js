@@ -11,18 +11,19 @@ function getInjectedData() {
     var moveArray = JSON.parse(injectedDataDiv.getAttribute("movearray"));
     var fenArray = JSON.parse(injectedDataDiv.getAttribute("fenarray"));
     var analyzedFens = JSON.parse(injectedDataDiv.getAttribute("analyzedFens"));
-    return { analysisData, moveArray, fenArray, analyzedFens};
+    var playerSide = JSON.parse(injectedDataDiv.getAttribute("playerSide"));
+    return { analysisData, moveArray, fenArray, analyzedFens, playerSide};
 }
 
 
 async function injectAnalysis() {
 
 
-    var { analysisData, moveArray, fenArray, analyzedFens } = getInjectedData();
-    console.log("this is the injectedData i got", analysisData, moveArray, fenArray, analyzedFens)
+    var { analysisData, moveArray, fenArray, analyzedFens, playerSide } = getInjectedData();
+    console.log("this is the injectedData i got", analysisData, moveArray, fenArray, analyzedFens, playerSide)
 
     var playerController = await loadPlayerController();
-    while(playerController.setGameFromExtension(fenArray, moveArray, analysisData, analyzedFens) == false){
+    while(playerController.setGameFromExtension(fenArray, moveArray, analysisData, analyzedFens, playerSide) == false){
         await new Promise((resolve) => setTimeout(resolve, 500)); 
         console.log("playerController.setGameFromExtension() unsuccessfull")
 

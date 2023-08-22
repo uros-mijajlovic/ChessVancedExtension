@@ -1,3 +1,4 @@
+WEBSITE_URL="https://chessvanced.com/"
 
 
 class Scraper {
@@ -22,7 +23,7 @@ class Scraper {
     gameReviewButtonClickHandler() {
         this.sendCurrentGameState();
 
-        window.open("http://localhost:8000/", "_blank");
+        window.open(WEBSITE_URL, "_blank");
     }
     tryToCreateButton() {
         var buttonContainer = document.getElementsByClassName("game-review-buttons-component")[0]
@@ -119,11 +120,12 @@ class Scraper {
 
         const currentGameId = window.location.href;
         const playerSide=this.getPlayerSide();
+        console.log("i am player color ", playerSide)
         var moveContainer = document.querySelectorAll("vertical-move-list")[0]
         if (moveContainer) {
             const moveArray = this.HTMLmovesToSEN(moveContainer);
 
-            return { moveArray: moveArray, gameId: currentGameId };
+            return { moveArray: moveArray, gameId: currentGameId, playerSide:playerSide };
         } else {
             return { moveArray: null, gameId: null, playerSide:playerSide };
         }
@@ -149,15 +151,10 @@ class Scraper {
             this.tryToCreateButton();
             
             if (!this.isLiveGame()) {
-
                 continue
             } else {
-
                 try {
-                    
                     this.sendCurrentGameState();
-                    
-
                 } catch (error) {
                     console.log("some error", error)
                 }
@@ -214,11 +211,17 @@ async function loadAnalysisData() {
     analysisDoc.setAttribute("analyzedFens", JSON.stringify(analyzedFens));
 
 
+    var key = "playerSide"
+    var searchData = [key];
+    const playerSide = (await chrome.storage.local.get(searchData))[key];
+    analysisDoc.setAttribute("playerSide", JSON.stringify(playerSide));
+
+
     (document.head || document.documentElement).appendChild(analysisDoc);
 
 
 }
-if (window.location.href == "http://localhost:8000/") {
+if (window.location.href == WEBSITE_URL) {
 
     loadInjector();
     //ako smo injectovali taj gejm onda nas ne interesuje vise ?!?
