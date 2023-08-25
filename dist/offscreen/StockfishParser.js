@@ -85,7 +85,7 @@ export class StockfishParser {
         //console.log(message);
         const isWhiteMove = getIsWhiteMoveFromFen(currentFEN);
         if (message == "info depth 0 score mate 0") {
-            this.data[0] = { "move": -1, "isCheckmated": true, "CP": (isWhiteMove ? 1 : -1), "cpOrMate": "mate" };
+            this.data[0] = { "move": -1, "isCheckmated": true, "CP": (isWhiteMove ? 1 : -1), "cpOrMate": "mate", "CPreal": (isWhiteMove ? 3000 : -3000) };
             this.data[0]["FEN"] = currentFEN;
             this.data[0]["depth"] = 123;
         } else {
@@ -94,7 +94,13 @@ export class StockfishParser {
             const bestMove = getBestMoveFromString(message);
             if (bestMove) {
                 const score = getScorevalueFromString(message, isWhiteMove)
-                this.data[moveOrder - 1] = { "move": bestMove, "CP": score["value"] * (isWhiteMove ? 1 : -1), "cpOrMate": score["cpOrMate"] };
+                var CPreal;
+                if(score["cpOrMate"] =="mate"){
+                    CPreal=(isWhiteMove ? 3000 : -3000);
+                }else{
+                    CPreal=score["value"] * (isWhiteMove ? 1 : -1);
+                }
+                this.data[moveOrder - 1] = { "move": bestMove, "CP": score["value"] * (isWhiteMove ? 1 : -1), "cpOrMate": score["cpOrMate"], "CPreal":CPreal };
                 this.data[moveOrder - 1]["FEN"] = currentFEN;
                 this.data[moveOrder - 1]["depth"] = evaulationDepth;
 

@@ -1,16 +1,16 @@
-WEBSITE_URL="https://chessvanced.com/"
+const WEBSITE_URL = "https://chessvanced.com/analysis/"
 
 
 class Scraper {
     getPlayerSide() {
         try {
             var oppositePlayerBar = document.getElementById("board-layout-player-top")
-            
+
             var clockItem = oppositePlayerBar.getElementsByClassName("clock-component")[0]
-            
-            if(clockItem.className.includes("white")){
+
+            if (clockItem.className.includes("white")) {
                 return "black"
-            }else{
+            } else {
                 return "white"
             }
         } catch (e) {
@@ -26,24 +26,37 @@ class Scraper {
         window.open(WEBSITE_URL, "_blank");
     }
     tryToCreateButton() {
-        var buttonContainer = document.getElementsByClassName("game-review-buttons-component")[0]
+        console.log("creatin some buttton")
+        if ((window.location.href).includes("https://www.chess.com/game")) {
+            var buttonContainer = document.getElementsByClassName("game-review-buttons-component")[0]
 
-        if (buttonContainer) {
-            if (buttonContainer.children.length == 2) {
-                const buttonElement = this.createCoolButton();
-
-                buttonElement.addEventListener("click", () => { this.gameReviewButtonClickHandler() });
-
-
-                buttonContainer.appendChild(buttonElement);
+            if (buttonContainer) {
+                if (buttonContainer.children.length == 2) {
+                    const buttonElement = this.createCoolButton("chessvanced-fixed");
+                    buttonElement.addEventListener("click", () => { this.gameReviewButtonClickHandler() });
+                    buttonContainer.appendChild(buttonElement);
+                }
             }
+            const existingButton = document.getElementById("chessvanced-floating");
+            if (!existingButton) {
+                const button = this.createCoolButton("chessvanced-floating");
+                button.style.position = "fixed";
+                button.style.bottom = "20px";
+                button.style.right = "20px";
+                button.style.zIndex = "9999";
+                button.addEventListener("click", () => { this.gameReviewButtonClickHandler() });
+
+                document.body.appendChild(button);
+            }
+
         }
     }
 
 
-    createCoolButton() {
+    createCoolButton(buttonId) {
         const buttonElement = document.createElement('button');
         buttonElement.classList.add('purple-button');
+        buttonElement.id = buttonId
 
         buttonElement.style = `
         grid-row: 2;
@@ -119,18 +132,18 @@ class Scraper {
     returnArrayOfMoves() {
 
         const currentGameId = window.location.href;
-        const playerSide=this.getPlayerSide();
+        const playerSide = this.getPlayerSide();
         console.log("i am player color ", playerSide)
         var moveContainer = document.querySelectorAll("vertical-move-list")[0]
         if (moveContainer) {
             const moveArray = this.HTMLmovesToSEN(moveContainer);
 
-            return { moveArray: moveArray, gameId: currentGameId, playerSide:playerSide };
+            return { moveArray: moveArray, gameId: currentGameId, playerSide: playerSide };
         } else {
-            return { moveArray: null, gameId: null, playerSide:playerSide };
+            return { moveArray: null, gameId: null, playerSide: playerSide };
         }
     }
-    sendCurrentGameState(){
+    sendCurrentGameState() {
         const { moveArray, gameId, playerSide } = this.returnArrayOfMoves();
 
         if (moveArray) {
@@ -139,20 +152,30 @@ class Scraper {
                 message: {
                     moves: moveArray,
                     gameId: gameId,
-                    playerSide:playerSide
+                    playerSide: playerSide
                 }
             })
         }
+    }
+    tryToDeleteButton(buttonId){
+        const element = document.getElementById(buttonId);
+
+        if (element) {
+        // Check if the element exists
+        element.parentNode.removeChild(element);
+}
     }
     async startScraping() {
         while (true) {
 
             await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2000ms
-            this.tryToCreateButton();
             
+
             if (!this.isLiveGame()) {
+                this.tryToCreateButton();
                 continue
             } else {
+                this.tryToDeleteButton("chessvanced-floating")
                 try {
                     this.sendCurrentGameState();
                 } catch (error) {
@@ -221,14 +244,13 @@ async function loadAnalysisData() {
 
 
 }
-if (window.location.href == WEBSITE_URL) {
+console.log(window.location.href, WEBSITE_URL)
+const currentUrl = window.location.href
+if (currentUrl == WEBSITE_URL) {
 
     loadInjector();
-    //ako smo injectovali taj gejm onda nas ne interesuje vise ?!?
-    //jos lakse, samo cemo da proverimo da li je gejm running da bi poslali moves
-    //GENIUS
 
-} else {
+} else if (currentUrl.includes("chess.com")) {
     console.log("start scrapin");
     scraper = new Scraper();
     scraper.startScraping();

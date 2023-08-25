@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ChessVanced",
+  "name": "ChessVancedDev",
   "version": "1.0.0",
   "description": "Free Game Review for Chess.com and Lichess",
   "host_permissions": [

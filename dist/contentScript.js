@@ -1,6 +1,7 @@
 async function loadPlayerController() {
     while (window.playerControllerInst == undefined) {
         await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2000ms
+        console.log("awaitin playercontroller")
     }
     return window.playerControllerInst;
 }
