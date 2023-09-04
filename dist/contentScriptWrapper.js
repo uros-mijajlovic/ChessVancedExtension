@@ -26,17 +26,8 @@ class Scraper {
         window.open(WEBSITE_URL, "_blank");
     }
     tryToCreateButton() {
-        console.log("creatin some buttton")
         if ((window.location.href).includes("https://www.chess.com/game")) {
-            var buttonContainer = document.getElementsByClassName("game-review-buttons-component")[0]
-
-            if (buttonContainer) {
-                if (buttonContainer.children.length == 2) {
-                    const buttonElement = this.createCoolButton("chessvanced-fixed");
-                    buttonElement.addEventListener("click", () => { this.gameReviewButtonClickHandler() });
-                    buttonContainer.appendChild(buttonElement);
-                }
-            }
+            
             const existingButton = document.getElementById("chessvanced-floating");
             if (!existingButton) {
                 const button = this.createCoolButton("chessvanced-floating");
@@ -48,7 +39,26 @@ class Scraper {
 
                 document.body.appendChild(button);
             }
+        }else if ((window.location.href).includes("lichess.org")) {
+            const existingButton = document.getElementById("chessvanced-floating");
+            if (!existingButton) {
+                const button = this.createCoolButton("chessvanced-floating");
+                button.style.position = "fixed";
+                button.style.bottom = "20px";
+                button.style.right = "20px";
+                button.style.zIndex = "9999";
+                button.addEventListener("click", () => { this.gameReviewButtonClickHandler() });
 
+                document.body.appendChild(button);
+            }
+        }
+    }
+
+    isInGame(){
+        if(window.location.href.includes("lichess.org")){
+            return document.querySelectorAll("cg-board").length==0
+        }else{
+            //...
         }
     }
 
@@ -111,6 +121,7 @@ class Scraper {
     }
 
     HTMLmovesToSEN(HTMLMoves) {
+        
         var moveArray = [];
 
         const whiteMoves = HTMLMoves.getElementsByClassName("white node");
@@ -126,21 +137,53 @@ class Scraper {
         return moveArray;
 
     }
+    moveContainerToSENLichess(moveContainer){
+        var moveArray=[];
+        const moves=moveContainer.querySelectorAll("kwdb");
+        for (const move of moves){
+            moveArray.push(move.textContent);
+        }
+        return moveArray
+    }
     isLiveGame() {
-        return document.getElementsByClassName("new-game-buttons-component").length == 0
+        if(window.location.href.includes("lichess.org")){
+           
+            return document.getElementsByClassName("game__meta")[0].children.length==1;
+        }else{
+            return document.getElementsByClassName("new-game-buttons-component").length == 0;
+        }
     }
     returnArrayOfMoves() {
-
+        
+        
         const currentGameId = window.location.href;
-        const playerSide = this.getPlayerSide();
-        console.log("i am player color ", playerSide)
-        var moveContainer = document.querySelectorAll("vertical-move-list")[0]
-        if (moveContainer) {
-            const moveArray = this.HTMLmovesToSEN(moveContainer);
+        if(currentGameId.includes("chess.com")){
+            const playerSide = this.getPlayerSide();
+            console.log("i am player color ", playerSide)
+            var moveContainer = document.querySelectorAll("vertical-move-list")[0]
+            if (moveContainer) {
+                const moveArray = this.HTMLmovesToSEN(moveContainer);
 
-            return { moveArray: moveArray, gameId: currentGameId, playerSide: playerSide };
-        } else {
-            return { moveArray: null, gameId: null, playerSide: playerSide };
+                return { moveArray: moveArray, gameId: currentGameId, playerSide: playerSide };
+            } else {
+                return { moveArray: null, gameId: null, playerSide: playerSide };
+            }
+        }else if(currentGameId.includes("lichess.org")){
+
+            const playerSide = "white";
+            console.log("i am player color ", playerSide)
+
+            
+            var moveContainer = document.querySelector("l4x")
+            if (moveContainer) {
+                const moveArray = this.moveContainerToSENLichess(moveContainer);
+
+                return { moveArray: moveArray, gameId: currentGameId, playerSide: playerSide };
+            } else {
+                return { moveArray: null, gameId: null, playerSide: playerSide };
+            }
+
+
         }
     }
     sendCurrentGameState() {
@@ -250,8 +293,7 @@ if (currentUrl == WEBSITE_URL) {
 
     loadInjector();
 
-} else if (currentUrl.includes("chess.com")) {
-    console.log("start scrapin");
+} else if (currentUrl.includes("chess.com") || currentUrl.includes("lichess.org")) {
     scraper = new Scraper();
     scraper.startScraping();
 }

@@ -2,6 +2,11 @@
 import * as sacrifice from './sacrifice.js';
 import { MemoryHandler } from "./MemoryHandler.js"
 
+
+function getWinPercentFromCP(cp){
+    return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1)
+    
+}
 export class AnalysisOrchestrator {
     constructor() {
         this.gameAnalysis = [];
@@ -221,6 +226,9 @@ export class AnalysisOrchestrator {
         const beforeMoveAnalysis = this.analysisArray[this.analysisArray.length - 2];
         const afterMoveAnalysis = this.analysisArray[this.analysisArray.length - 1];
 
+        const beforeMoveWinPercent = getWinPercentFromCP(afterMoveAnalysis[0]["CPreal"])
+        const afterMoveWinPercent = getWinPercentFromCP(beforeMoveAnalysis[0]["CPreal"])
+
         console.log(this.analysisArray);
         if (!(1 in beforeMoveAnalysis)) {
             return "gray";
@@ -247,11 +255,21 @@ export class AnalysisOrchestrator {
                 return "best";
             }
         }
+
+        const winPercentDiscrepancy = (afterMoveWinPercent - beforeMoveWinPercent) * (isWhiteMove ? -1 : 1)
+
+
         if (playersMove == beforeMoveAnalysis[1]["move"] && Math.abs((Math.abs(beforeMoveAnalysis[0]["CPreal"]) - Math.abs(beforeMoveAnalysis[1]["CPreal"]))) < 100) {
             return "good";
         }
-        if (afterMoveCpDiscrepancy < -200) {
+        if (winPercentDiscrepancy < -30) {
+            return "blunder";
+        }
+        if (winPercentDiscrepancy < -15) {
             return "mistake";
+        }
+        if (winPercentDiscrepancy < -10) {
+            return "inaccuracy";
         }
         return "gray";
     }

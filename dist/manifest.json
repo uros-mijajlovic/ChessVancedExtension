@@ -1,14 +1,18 @@
 {
   "manifest_version": 3,
   "name": "ChessVancedDev",
-  "version": "1.0.0",
+  "version": "2.4.0",
   "description": "Free Game Review for Chess.com and Lichess",
   "host_permissions": [
     "<all_urls>"
   ],
   "web_accessible_resources": [{
     "resources": ["contentScript.js"],
-    "matches": ["<all_urls>"]
+    "matches": [
+      "*://*.chess.com/*",
+      "*://*.lichess.com/*",
+      "*://*.chessvanced.com/*"
+    ]
   }],
   "content_scripts": [
     {
