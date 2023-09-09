@@ -1,4 +1,5 @@
 const WEBSITE_URL = "https://chessvanced.com/analysis/"
+//const WEBSITE_URL = "http://localhost:8000"
 
 
 class Scraper {
@@ -17,8 +18,19 @@ class Scraper {
             console.log(e);
             return "white"
         }
-
-
+    }
+    getPlayersElo(){
+        console.log("gettinplayersinfo")
+        try{
+            var ratings=document.getElementsByClassName("rating-score-rating")
+            var elos=[]
+            for (const rating of ratings){
+                elos.push(rating.textContent);
+            }
+            return elos
+        }catch(e){
+            return [-1, -1];
+        }
     }
     gameReviewButtonClickHandler() {
         this.sendCurrentGameState();
@@ -147,10 +159,12 @@ class Scraper {
     }
     isLiveGame() {
         if(window.location.href.includes("lichess.org")){
-           
             return document.getElementsByClassName("game__meta")[0].children.length==1;
         }else{
-            return document.getElementsByClassName("new-game-buttons-component").length == 0;
+            const newGameButtonsDontExist=document.getElementsByClassName("new-game-buttons-component").length == 0
+            const quickAnalysisButtonsDontExist=document.getElementsByClassName("quick-analysis-results-tally").length==0
+            const gameReviewButtonsDontExist=document.getElementsByClassName("game-review-buttons-component").length==0
+            return newGameButtonsDontExist && quickAnalysisButtonsDontExist && gameReviewButtonsDontExist;
         }
     }
     returnArrayOfMoves() {
@@ -158,15 +172,16 @@ class Scraper {
         
         const currentGameId = window.location.href;
         if(currentGameId.includes("chess.com")){
+            this.getPlayersElo();
             const playerSide = this.getPlayerSide();
+            const playerElos=this.getPlayersElo();
             console.log("i am player color ", playerSide)
             var moveContainer = document.querySelectorAll("vertical-move-list")[0]
             if (moveContainer) {
                 const moveArray = this.HTMLmovesToSEN(moveContainer);
-
-                return { moveArray: moveArray, gameId: currentGameId, playerSide: playerSide };
+                return { moves: moveArray, gameId: currentGameId, playerSide: playerSide, playerElos:playerElos};
             } else {
-                return { moveArray: null, gameId: null, playerSide: playerSide };
+                return { moves: null, gameId: null, playerSide: playerSide, playerElos:playerElos};
             }
         }else if(currentGameId.includes("lichess.org")){
 
@@ -187,16 +202,12 @@ class Scraper {
         }
     }
     sendCurrentGameState() {
-        const { moveArray, gameId, playerSide } = this.returnArrayOfMoves();
+        const message = this.returnArrayOfMoves();
 
         if (moveArray) {
             chrome.runtime.sendMessage({
                 type: "analyzeMoves",
-                message: {
-                    moves: moveArray,
-                    gameId: gameId,
-                    playerSide: playerSide
-                }
+                message: message
             })
         }
     }
@@ -215,6 +226,7 @@ class Scraper {
             
 
             if (!this.isLiveGame()) {
+                this.sendCurrentGameState();//TO DELETE
                 this.tryToCreateButton();
                 continue
             } else {
@@ -289,7 +301,7 @@ async function loadAnalysisData() {
 }
 console.log(window.location.href, WEBSITE_URL)
 const currentUrl = window.location.href
-if (currentUrl == WEBSITE_URL) {
+if (currentUrl.includes(WEBSITE_URL)) {
 
     loadInjector();
 

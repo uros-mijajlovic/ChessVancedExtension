@@ -9,9 +9,7 @@
   "web_accessible_resources": [{
     "resources": ["contentScript.js"],
     "matches": [
-      "*://*.chess.com/*",
-      "*://*.lichess.com/*",
-      "*://*.chessvanced.com/*"
+      "<all_urls>"
     ]
   }],
   "content_scripts": [

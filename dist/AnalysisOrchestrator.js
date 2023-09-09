@@ -27,7 +27,7 @@ export class AnalysisOrchestrator {
             }
 
             if (msg.type == "analyzeMoves") {
-                this.analyzeMoveArray(msg.message.moves, msg.message.gameId, msg.message.playerSide);
+                this.analyzeMoveArray(msg.message.moves, msg.message.gameId, msg.message.playerSide, msg.message.playersElo);
             }
 
             if (msg.type == "fromContentScript") {
@@ -172,8 +172,9 @@ export class AnalysisOrchestrator {
         }
         return newMoves;
     }
-    async analyzeMoveArray(moveArray, gameId, playerSide) {
+    async analyzeMoveArray(moveArray, gameId, playerSide, playersElo=[-3, -3]) {
         await this.clearDataIfNewGame(gameId);
+        console.log("players elo is", playersElo)
 
         this.playerSide=playerSide;
 
