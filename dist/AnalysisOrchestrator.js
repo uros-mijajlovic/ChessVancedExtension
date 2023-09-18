@@ -27,7 +27,7 @@ export class AnalysisOrchestrator {
             }
 
             if (msg.type == "analyzeMoves") {
-                this.analyzeMoveArray(msg.message.moves, msg.message.gameId, msg.message.playerSide, msg.message.playersElo);
+                this.analyzeMoveArray(msg.message.moves, msg.message.gameId, msg.message.playerSide, msg.message.playerElos);
             }
 
             if (msg.type == "fromContentScript") {
@@ -172,9 +172,9 @@ export class AnalysisOrchestrator {
         }
         return newMoves;
     }
-    async analyzeMoveArray(moveArray, gameId, playerSide, playersElo=[-3, -3]) {
+    async analyzeMoveArray(moveArray, gameId, playerSide, playerElos=[-3, -3]) {
         await this.clearDataIfNewGame(gameId);
-        console.log("players elo is", playersElo)
+        console.log(moveArray);
 
         this.playerSide=playerSide;
 
@@ -191,28 +191,13 @@ export class AnalysisOrchestrator {
         chrome.storage.local.set({ "moveArray": this.totalMoveArray });
         chrome.storage.local.set({ "fenArray": this.totalFenArray });
         chrome.storage.local.set({ "playerSide": this.playerSide });
-
-
-        // for (let i = 0; i < fenArray.length; i++) {
-        //     const index = oldFenArrayLength + i;
-        //     if (index == 0) {
-        //         this.moveQueue.push({ fen: fenArray[i], move: "", index: index })
-        //         //await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: "", index: index } });
-        //     } else {
-        //         console.log(fromtoMoves);
-        //         this.moveQueue.push({ fen: fenArray[i], move: fromtoMoves[i - 1].fromto, index: index })
-        //         //await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: fromtoMoves[i - 1].fromto, index: index } });
-
-        //     }
-        // }
+        chrome.storage.local.set({ "playerElos": playerElos });
 
         for (let i = oldFenArrayLength; i < this.totalFenArray.length; i++) {
             if (i == 0) {
                 this.moveQueue.push({ fen: this.totalFenArray[i], move: "", index: i})
-                //await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: "", index: index } });
             } else {
                 this.moveQueue.push({ fen: this.totalFenArray[i], move: this.totalMoveArray[i - 1].fromto, index: i })
-                //await setupIfNeededAndSendMessage({ "type": "move array", "message": { fen: fenArray[i], move: fromtoMoves[i - 1].fromto, index: index } });
 
             }
         }

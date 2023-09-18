@@ -1,34 +1,43 @@
-const WEBSITE_URL = "https://chessvanced.com/analysis/"
+const WEBSITE_URL = "https://chessvanced.com/analysis"
 //const WEBSITE_URL = "http://localhost:8000"
 
 
 class Scraper {
     getPlayerSide() {
         try {
-            var oppositePlayerBar = document.getElementById("board-layout-player-top")
+            var playerSide="white";
+            if (window.location.href.includes("chess.com")) {
+                var oppositePlayerBar = document.getElementById("board-layout-player-top")
 
-            var clockItem = oppositePlayerBar.getElementsByClassName("clock-component")[0]
+                var clockItem = oppositePlayerBar.getElementsByClassName("clock-component")[0]
 
-            if (clockItem.className.includes("white")) {
-                return "black"
-            } else {
-                return "white"
+                if (clockItem.className.includes("white")) {
+                    playerSide="black"
+                } else {
+                    playerSide="white"
+                }
             }
+            return playerSide;
         } catch (e) {
             console.log(e);
             return "white"
         }
     }
-    getPlayersElo(){
-        console.log("gettinplayersinfo")
-        try{
-            var ratings=document.getElementsByClassName("rating-score-rating")
-            var elos=[]
-            for (const rating of ratings){
-                elos.push(rating.textContent);
+    getPlayersElo() {
+        //console.log("gettinplayersinfo")
+        try {
+            var elos = []
+            var ratings;
+            if (window.location.href.includes("chess.com")) {
+                ratings = document.getElementsByClassName("rating-score-rating")
+            }else if(window.location.href.includes("lichess")){
+                ratings=document.getElementsByTagName("rating");
+            }
+            for (const rating of ratings) {
+                elos.push(parseInt(rating.textContent));
             }
             return elos
-        }catch(e){
+        } catch (e) {
             return [-1, -1];
         }
     }
@@ -39,7 +48,7 @@ class Scraper {
     }
     tryToCreateButton() {
         if ((window.location.href).includes("https://www.chess.com/game")) {
-            
+
             const existingButton = document.getElementById("chessvanced-floating");
             if (!existingButton) {
                 const button = this.createCoolButton("chessvanced-floating");
@@ -51,7 +60,7 @@ class Scraper {
 
                 document.body.appendChild(button);
             }
-        }else if ((window.location.href).includes("lichess.org")) {
+        } else if ((window.location.href).includes("lichess.org")) {
             const existingButton = document.getElementById("chessvanced-floating");
             if (!existingButton) {
                 const button = this.createCoolButton("chessvanced-floating");
@@ -66,10 +75,10 @@ class Scraper {
         }
     }
 
-    isInGame(){
-        if(window.location.href.includes("lichess.org")){
-            return document.querySelectorAll("cg-board").length==0
-        }else{
+    isInGame() {
+        if (window.location.href.includes("lichess.org")) {
+            return document.querySelectorAll("cg-board").length == 0
+        } else {
             //...
         }
     }
@@ -133,11 +142,12 @@ class Scraper {
     }
 
     HTMLmovesToSEN(HTMLMoves) {
-        
+
         var moveArray = [];
 
         const whiteMoves = HTMLMoves.getElementsByClassName("white node");
         const blackMoves = HTMLMoves.getElementsByClassName("black node");
+        console.log(whiteMoves);
         for (let i = 0; i < Math.max(whiteMoves.length, blackMoves.length); i++) {
             if (i < whiteMoves.length) {
                 moveArray.push(this.extractStringFromNode(whiteMoves[i]));
@@ -149,84 +159,80 @@ class Scraper {
         return moveArray;
 
     }
-    moveContainerToSENLichess(moveContainer){
-        var moveArray=[];
-        const moves=moveContainer.querySelectorAll("kwdb");
-        for (const move of moves){
+    moveContainerToSENLichess(moveContainer) {
+        var moveArray = [];
+        const moves = moveContainer.querySelectorAll("kwdb");
+        for (const move of moves) {
             moveArray.push(move.textContent);
         }
         return moveArray
     }
     isLiveGame() {
-        if(window.location.href.includes("lichess.org")){
-            return document.getElementsByClassName("game__meta")[0].children.length==1;
-        }else{
-            const newGameButtonsDontExist=document.getElementsByClassName("new-game-buttons-component").length == 0
-            const quickAnalysisButtonsDontExist=document.getElementsByClassName("quick-analysis-results-tally").length==0
-            const gameReviewButtonsDontExist=document.getElementsByClassName("game-review-buttons-component").length==0
+        if (window.location.href.includes("lichess.org")) {
+            return document.getElementsByClassName("game__meta")[0].children.length == 1;
+        } else {
+            const newGameButtonsDontExist = document.getElementsByClassName("new-game-buttons-component").length == 0
+            const quickAnalysisButtonsDontExist = document.getElementsByClassName("quick-analysis-results-tally").length == 0
+            const gameReviewButtonsDontExist = document.getElementsByClassName("game-review-buttons-component").length == 0
             return newGameButtonsDontExist && quickAnalysisButtonsDontExist && gameReviewButtonsDontExist;
         }
     }
     returnArrayOfMoves() {
-        
-        
+
+        const playerElos = this.getPlayersElo();
         const currentGameId = window.location.href;
-        if(currentGameId.includes("chess.com")){
-            this.getPlayersElo();
-            const playerSide = this.getPlayerSide();
-            const playerElos=this.getPlayersElo();
-            console.log("i am player color ", playerSide)
-            var moveContainer = document.querySelectorAll("vertical-move-list")[0]
+        var moveContainer;
+        var playerSide =this.getPlayerSide();;
+        if (currentGameId.includes("chess.com")) {
+            moveContainer = document.getElementsByClassName("vertical-move-list")[0]
+            console.log(moveContainer, "moveContainer")
             if (moveContainer) {
                 const moveArray = this.HTMLmovesToSEN(moveContainer);
+                console.log(moveArray);
                 return { moves: moveArray, gameId: currentGameId, playerSide: playerSide, playerElos:playerElos};
             } else {
                 return { moves: null, gameId: null, playerSide: playerSide, playerElos:playerElos};
             }
-        }else if(currentGameId.includes("lichess.org")){
 
-            const playerSide = "white";
-            console.log("i am player color ", playerSide)
-
-            
-            var moveContainer = document.querySelector("l4x")
+        } else if (currentGameId.includes("lichess.org")) {
+            moveContainer = document.querySelector("l4x")
             if (moveContainer) {
                 const moveArray = this.moveContainerToSENLichess(moveContainer);
-
-                return { moveArray: moveArray, gameId: currentGameId, playerSide: playerSide };
+                return { moves: moveArray, gameId: currentGameId, playerSide: playerSide, playerElos:playerElos };
             } else {
-                return { moveArray: null, gameId: null, playerSide: playerSide };
+                return { moves: null, gameId: null, playerSide: playerSide, playerElos:playerElos };
             }
-
-
         }
+
+
+        
     }
     sendCurrentGameState() {
         const message = this.returnArrayOfMoves();
-
-        if (moveArray) {
+        if (message.moves) {
             chrome.runtime.sendMessage({
                 type: "analyzeMoves",
                 message: message
             })
+        } else {
+            console.log("bad message", message);
         }
     }
-    tryToDeleteButton(buttonId){
+    tryToDeleteButton(buttonId) {
         const element = document.getElementById(buttonId);
 
         if (element) {
-        // Check if the element exists
-        element.parentNode.removeChild(element);
-}
+            // Check if the element exists
+            element.parentNode.removeChild(element);
+        }
     }
     async startScraping() {
         while (true) {
 
             await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2000ms
-            
+
 
             if (!this.isLiveGame()) {
-                this.sendCurrentGameState();//TO DELETE
                 this.tryToCreateButton();
                 continue
             } else {
@@ -252,57 +258,46 @@ async function loadInjector() {
     (document.head || document.documentElement).appendChild(scriptDoc);
 }
 
+async function retrieveDataFromMemory(key) {
+    const searchData = [key];
+    const result = (await chrome.storage.local.get(searchData))[key];
+    return result;
+}
+
+
 
 async function loadAnalysisData() {
 
     var analysisDoc = document.createElement('div');
     analysisDoc.id = "injectedData"
 
-
-    console.log("BB");
-    var key = "analysisData"
-    var searchData = [key];
-    const analysisData = (await chrome.storage.local.get(searchData))[key];
+    const analysisData = await retrieveDataFromMemory("analysisData");
     analysisDoc.setAttribute("analysisData", JSON.stringify(analysisData));
-    //analysisDoc.setAttribute("analysisData", analysisData)
 
-
-    key = "moveArray"
-    searchData = [key];
-    const moveArray = (await chrome.storage.local.get(searchData))[key];
+    const moveArray = await retrieveDataFromMemory("moveArray");
     analysisDoc.setAttribute("moveArray", JSON.stringify(moveArray));
 
-
-
-    key = "fenArray"
-    searchData = [key];
-
-    const fenArray = (await chrome.storage.local.get(searchData))[key];
+    const fenArray = await retrieveDataFromMemory("fenArray");
     analysisDoc.setAttribute("fenArray", JSON.stringify(fenArray));
 
-
-
-    key = "analyzedFens"
-    searchData = [key];
-
-    const analyzedFens = (await chrome.storage.local.get(searchData))[key];
+    const analyzedFens = await retrieveDataFromMemory("analyzedFens");
     analysisDoc.setAttribute("analyzedFens", JSON.stringify(analyzedFens));
 
-
-    var key = "playerSide"
-    var searchData = [key];
-    const playerSide = (await chrome.storage.local.get(searchData))[key];
+    const playerSide = await retrieveDataFromMemory("playerSide");
     analysisDoc.setAttribute("playerSide", JSON.stringify(playerSide));
+
+    const playerElos = await retrieveDataFromMemory("playerElos");
+    analysisDoc.setAttribute("playerElos", JSON.stringify(playerElos));
 
 
     (document.head || document.documentElement).appendChild(analysisDoc);
+    console.log("set shits", analysisDoc);
 
 
 }
 console.log(window.location.href, WEBSITE_URL)
 const currentUrl = window.location.href
 if (currentUrl.includes(WEBSITE_URL)) {
-
     loadInjector();
 
 } else if (currentUrl.includes("chess.com") || currentUrl.includes("lichess.org")) {

@@ -54,13 +54,13 @@ class stockfishOrchestrator {
 
     }
     async getLichessData(fenPosition) {
-        return [false];
         try {
-            const apiUrl = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fenPosition)}&multiPv=2`;
+            const apiUrl = `https://lichess.org/api/cloud-eval?fen=${fenPosition}&multiPv=2`;
             const response = await axios.get(apiUrl);
             // Check if the response contains any analysis data (e.g., 'evals' field).
             if (response.data.fen) {
-                // The position was found in the cache (already analyzed).
+                // The position was found in the cache (already analyzed)
+                
                 if (response.data.pvs.length < 2) {
                     return [false];
                 }
@@ -72,6 +72,7 @@ class stockfishOrchestrator {
             }
         }
         catch (error) {
+            console.log("ERROR", error)
             return [false];
         }
     }
@@ -111,13 +112,15 @@ class stockfishOrchestrator {
 
         chrome.runtime.sendMessage({ "type": "stockfishBack", "result": fenPosition })
         const cachedResponse = await this.checkCache(fenPosition);
-        this.fillRestOfDataForAnalysisOrchestrator(cachedResponse);
+        cachedResponse[1]=this.fillRestOfDataForAnalysisOrchestrator(cachedResponse[1]);
         if (cachedResponse[0] == true) {
             this.sendDataToAnalysisOrchestrator(cachedResponse[1]);
             this.isCurrentlyWorking = false;
+            console.log("za ovu poziciju imam", fenPosition, cachedResponse);
             return;
+        }else{
+            console.log("za ovu poziciju nemam info", fenPosition, cachedResponse);
         }
-        console.log("za ovu poziciju nemam info");
         //console.log(`position fen ${fenPosition}`);
         this.stockfishWorker.postMessage(`position fen ${fenPosition}`);
         this.stockfishWorker.postMessage(`go movetime ${this.moveTimeLengthMs}`);

@@ -1,5 +1,5 @@
 const path = require('path');
-
+const TerserPlugin = require("terser-webpack-plugin");
 module.exports = {
   entry: {
     contentScriptWrapper: './dist/contentScriptWrapper.js',
@@ -10,5 +10,20 @@ module.exports = {
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'distWebpack'),
+  },
+  optimization: {
+    'minimize': true,
+    minimizer: [new TerserPlugin({
+      terserOptions: {
+        compress: {
+          pure_funcs: [
+            'console.log',
+            'console.info',
+            'console.debug',
+            'console.warn'
+          ]
+        }
+      }
+    })],
   },
 };
